@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlexiBudget - Campus Meal Plan Tracker</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .logo img {
+      max-width: 50px;
+      margin-right: 10px;
+    }
+    
+    .logo h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="logo">
+        <img src="static/img/usfca-logo.png" alt="USFCA Logo">
+        <h1>FlexiBudget</h1>
+      </div>
+      <ul class="menu">
+        <li class="active"><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li><a href="transactions.html"><i class="fas fa-history"></i> Transactions</a></li>
+        <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <p>Version 0.1.0</p>
+      </div>
+    </nav>
+
+    <main class="content">
+      <header>
+        <div class="user-info">
+          <img src="static/img/avatar.svg" alt="User Avatar" class="avatar">
+          <div>
+            <h2>Hello, <span id="username">Student</span></h2>
+            <p>Welcome back!</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="notifications"><i class="fas fa-bell"></i></button>
+          <button id="refresh"><i class="fas fa-sync-alt"></i></button>
+        </div>
+      </header>
+
+      <section class="dashboard">
+        <div class="card balance-card">
+          <h3>Current Balance</h3>
+          <div class="balance-amount">$<span id="current-balance">1,250.00</span></div>
+          <div class="balance-details">
+            <p>Starting Balance: $<span id="starting-balance">1,500.00</span></p>
+            <p>Spent: $<span id="spent-amount">250.00</span></p>
+          </div>
+        </div>
+
+        <div class="card budget-card">
+          <h3>Weekly Budget</h3>
+          <div class="budget-progress">
+            <div class="progress-bar">
+              <div class="progress" id="budget-progress" style="width: 45%"></div>
+            </div>
+            <div class="progress-labels">
+              <span>$<span id="current-week-spent">45.00</span></span>
+              <span>$<span id="weekly-budget">100.00</span></span>
+            </div>
+          </div>
+          <p class="budget-status">You've spent <span id="budget-percentage">45%</span> of your weekly budget</p>
+        </div>
+
+        <div class="card spending-card">
+          <h3>Recent Spending</h3>
+          <canvas id="spending-chart"></canvas>
+        </div>
+
+        <div class="card transactions-card">
+          <div class="card-header">
+            <h3>Latest Transactions</h3>
+            <a href="transactions.html" class="view-all">View All</a>
+          </div>
+          <div class="transaction-list" id="transaction-list">
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="static/js/main.js"></script>
+  <script src="static/js/charts.js"></script>
+  <script src="static/js/transactions.js"></script>
+</body>
+</html> 

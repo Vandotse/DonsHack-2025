@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - FlexiBudget</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: var(--bg-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .login-container {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .login-header h1 {
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+    
+    .login-header p {
+      color: var(--text-light);
+    }
+    
+    .login-form .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .login-form label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .login-form input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    
+    .login-button {
+      width: 100%;
+      padding: 1rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .login-button:hover {
+      background-color: var(--secondary-color);
+      color: #000;
+    }
+    
+    .login-options {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .login-options a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .login-options a:hover {
+      text-decoration: underline;
+    }
+    
+    .remember-me {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .remember-me input {
+      width: auto;
+      margin-right: 0.5rem;
+    }
+
+    .usfca-logo {
+      max-width: 120px;
+      margin: 0 auto 1rem;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <img src="static/img/usfca-logo.png" alt="USFCA Logo" class="usfca-logo">
+      <h1>FlexiBudget</h1>
+      <p>Track and manage your campus meal plan</p>
+    </div>
+    
+    <form class="login-form" id="login-form">
+      <div class="form-group">
+        <label for="student-id">Student ID</label>
+        <input type="text" id="student-id" placeholder="Enter your student ID" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required>
+      </div>
+      
+      <div class="remember-me">
+        <input type="checkbox" id="remember-me">
+        <label for="remember-me">Remember me</label>
+      </div>
+      
+      <button type="submit" class="login-button">Log In</button>
+      
+      <div class="login-options">
+        <a href="#">Forgot password?</a>
+        <a href="#">Create account</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const studentId = document.getElementById('student-id').value;
+      const password = document.getElementById('password').value;
+      
+      if (studentId && password) {
+        sessionStorage.setItem('username', studentId);
+        
+        window.location.href = 'index.html';
+      } else {
+        alert('Please enter both student ID and password');
+      }
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexiBudget - Dashboard</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+    <style>
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo img {
+            max-width: 50px;
+            margin-right: 10px;
+        }
+        
+        .logo h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .view-all {
+            transition: background-color 0.3s, color 0.3s;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .status {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status.completed {
+            background-color: #00543C;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <img src="static/img/usfca-logo.png" alt="USFCA Logo" class="usfca-logo">
+                <h1>FlexiBudget</h1>
+            </div>
+            <div class="user-info">
+                <span>John Doe</span>
+                <img src="static/img/avatar.svg" class="avatar" alt="User Avatar">
+            </div>
+        </header>
+        <nav class="sidebar">
+            <ul class="menu">
+                <li class="active"><a href="dashboard.html"><i class="icon-dashboard"></i> Dashboard</a></li>
+                <li><a href="transactions.html"><i class="icon-transactions"></i> Transactions</a></li>
+                <li><a href="settings.html"><i class="icon-settings"></i> Settings</a></li>
+                <li><a href="login.html"><i class="icon-logout"></i> Logout</a></li>
+            </ul>
+        </nav>
+        <main class="content">
+            <section class="overview">
+                <div class="card">
+                    <h2>Current Balance</h2>
+                    <p class="balance">$857.50</p>
+                    <p class="timeframe">as of today</p>
+                </div>
+                <div class="card">
+                    <h2>Spending Limit</h2>
+                    <p class="balance">$150.00</p>
+                    <p class="timeframe">weekly</p>
+                </div>
+                <div class="card">
+                    <h2>This Week</h2>
+                    <p class="balance">$83.75</p>
+                    <p class="timeframe">spent so far</p>
+                </div>
+            </section>
+            <section class="spending-overview">
+                <div class="card full-width">
+                    <h2>Weekly Spending</h2>
+                    <canvas id="weeklySpendingChart"></canvas>
+                </div>
+            </section>
+            <section class="recent-transactions">
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h2>Recent Transactions</h2>
+                        <a href="transactions.html" class="view-all" 
+                           onmouseover="this.style.backgroundColor='#FDBB30'; this.style.color='black';" 
+                           onmouseout="this.style.backgroundColor=''; this.style.color='';">View All</a>
+                    </div>
+                    <table class="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Oct 15, 2023</td>
+                                <td>Campus Cafe</td>
+                                <td>-$12.50</td>
+                                <td><span class="status completed">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Oct 14, 2023</td>
+                                <td>Coffee Shop</td>
+                                <td>-$4.75</td>
+                                <td><span class="status completed">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Oct 14, 2023</td>
+                                <td>Meal Plan Refill</td>
+                                <td>+$100.00</td>
+                                <td><span class="status completed">Completed</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <button class="add-transaction" id="addTransactionBtn">+</button>
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Transaction</h2>
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" name="amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                <button type="submit" class="btn primary" 
+                        onmouseover="this.style.backgroundColor='#FDBB30'; this.style.color='black';" 
+                        onmouseout="this.style.backgroundColor=''; this.style.color='';">Add Transaction</button>
+            </form>
+        </div>
+    </div>
+    <script src="static/js/charts.js"></script>
+    <script src="static/js/transactions.js"></script>
+</body>
+</html> 
