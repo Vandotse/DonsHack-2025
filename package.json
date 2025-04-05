@@ -1,0 +1,16 @@
+{
+  "name": "flexibudget",
+  "version": "0.1.0",
+  "description": "Campus meal plan budgeting application",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "chart.js": "^4.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+} 
