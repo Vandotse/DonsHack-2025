@@ -1,47 +1,50 @@
-# FlexiBudget
+# FlexiBudget - Campus Meal Plan Tracker
 
-A campus tech app for tracking and budgeting student meal plans ("flexi"). This application helps students:
-
-- Track their meal plan balance
-- Set weekly budget targets
-- Get notifications when approaching spending limits
+FlexiBudget is a web application designed to help university students track and manage their campus meal plan funds.
 
 ## Features
 
-- Dashboard displaying current balance and spending history
-- Weekly budget recommendations
-- Spending alerts and notifications
-- Optional spending restrictions
+- Track current meal plan balance
+- View transaction history
+- Set weekly budgets and spending goals
+- Monitor spending patterns
+- Get reminders when approaching budget limits
 
-## Project Structure
-
-- `cmd/`: Contains the Go backend server
-- `pkg/`: Go packages for the backend
-- `web/`: Frontend HTML, CSS, and JavaScript
-
-## Setup
+## Setup Instructions
 
 ### Prerequisites
+- Node.js (v14 or higher)
+- npm (v7 or higher)
 
-- Node.js (for frontend)
-- Go (for backend)
+### Installation
 
-### Running Locally
+1. Clone this repository:
+```
+git clone https://github.com/yourusername/DonsHack-2025.git
+cd DonsHack-2025
+```
 
-1. Install frontend dependencies:
-   ```
-   npm install
-   ```
+2. Install dependencies:
+```
+npm install
+```
 
-2. Start the development server:
-   ```
-   npm run dev
-   ```
+3. Start the server:
+```
+npm start
+```
+
+4. Open your browser and navigate to:
+```
+http://localhost:3001
+```
 
 ## Development
 
-To contribute to this project:
+- The main application is built with HTML, CSS, and JavaScript
+- Uses Node.js for the backend server
+- Data is stored in browser's localStorage for demo purposes
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request 
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
