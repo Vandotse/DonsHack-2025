@@ -10,7 +10,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pyne/flexibudget/pkg/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
@@ -260,4 +259,4 @@ func AuthMiddleware(db *models.DB) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-} 
+}
