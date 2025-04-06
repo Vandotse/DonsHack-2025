@@ -44,7 +44,6 @@ type RegisterRequest struct {
 	Email     string `json:"email"`
 }
 
-// Login authenticates a user and returns a JWT token
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -57,7 +56,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user from database
 	user, err := h.db.GetUserByStudentID(req.StudentID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -65,7 +63,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user == nil {
-		// If user doesn't exist but we're in development mode, create a test user
 		if os.Getenv("APP_ENV") == "development" && req.StudentID != "" {
 			user, err = h.db.CreateUser(req.StudentID, "Demo User", req.StudentID+"@example.com", req.Password)
 			if err != nil {
@@ -77,14 +74,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// Verify password
 		if !h.db.VerifyPassword(user, req.Password) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 	}
 
-	// Generate token
 	expiresAt := time.Now().Add(24 * time.Hour).Unix()
 	token, err := generateToken(user.ID, user.StudentID, expiresAt)
 	if err != nil {
@@ -106,7 +101,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// Register creates a new user
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -119,13 +113,11 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input
 	if req.StudentID == "" || req.Password == "" || req.Name == "" || req.Email == "" {
 		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user already exists
 	existingUser, err := h.db.GetUserByStudentID(req.StudentID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -137,14 +129,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create new user
 	user, err := h.db.CreateUser(req.StudentID, req.Name, req.Email, req.Password)
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	// Generate token
 	expiresAt := time.Now().Add(24 * time.Hour).Unix()
 	token, err := generateToken(user.ID, user.StudentID, expiresAt)
 	if err != nil {
@@ -172,13 +162,10 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In a real implementation, you might want to add the token to a blocklist
-	// For now, we'll just return success
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
-// JWT secret key
 var jwtSecret = []byte(getJWTSecret())
 
 func getJWTSecret() string {
@@ -189,7 +176,6 @@ func getJWTSecret() string {
 	return secret
 }
 
-// Generate JWT token
 func generateToken(userID int64, studentID string, expiresAt int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":    userID,
@@ -200,14 +186,12 @@ func generateToken(userID int64, studentID string, expiresAt int64) (string, err
 	return token.SignedString(jwtSecret)
 }
 
-// ExtractUserID extracts the user ID from the Authorization header
 func ExtractUserID(r *http.Request) (int64, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return 0, fmt.Errorf("missing authorization header")
 	}
 
-	// Remove "Bearer " prefix
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 	if tokenStr == authHeader {
 		return 0, fmt.Errorf("invalid token format")
@@ -235,7 +219,6 @@ func ExtractUserID(r *http.Request) (int64, error) {
 	return 0, fmt.Errorf("invalid token")
 }
 
-// AuthMiddleware protects routes that require authentication
 func AuthMiddleware(db *models.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -245,14 +228,12 @@ func AuthMiddleware(db *models.DB) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Verify user exists
 			user, err := db.GetUserByID(userID)
 			if err != nil || user == nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 
-			// Set user ID in context
 			ctx := r.Context()
 			r = r.WithContext(ctx)
 

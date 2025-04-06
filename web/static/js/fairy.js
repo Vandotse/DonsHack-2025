@@ -1,9 +1,4 @@
-/**
- * Flexi Fairy functionality
- * Handles requests, fairy dashboard, and leaderboard
- */
 
-// Global state
 const fairyState = {
   myRequests: [],
   pendingRequests: [],
@@ -12,7 +7,6 @@ const fairyState = {
   leaderboard: []
 };
 
-// Error handling wrapper for fetch API
 async function fetchFairyAPI(endpoint, options = {}) {
   try {
     const response = await fetchAPI(endpoint, options);
@@ -25,7 +19,6 @@ async function fetchFairyAPI(endpoint, options = {}) {
   }
 }
 
-// Load user's fairy status
 async function loadFairyStatus() {
   const statusData = await fetchFairyAPI('/api/fairy/status');
   if (statusData) {
@@ -35,7 +28,6 @@ async function loadFairyStatus() {
   return statusData;
 }
 
-// Toggle fairy status
 async function toggleFairyStatus(isActive, maxAmount) {
   const data = await fetchFairyAPI('/api/fairy/toggle', {
     method: 'POST',
@@ -52,7 +44,6 @@ async function toggleFairyStatus(isActive, maxAmount) {
   return data;
 }
 
-// Load user's requests
 async function loadMyRequests() {
   const data = await fetchFairyAPI('/api/fairy/requests');
   if (data && data.requests) {
@@ -62,7 +53,6 @@ async function loadMyRequests() {
   return data;
 }
 
-// Load pending requests
 async function loadPendingRequests() {
   const data = await fetchFairyAPI('/api/fairy/requests/pending');
   if (data && data.requests) {
@@ -72,7 +62,6 @@ async function loadPendingRequests() {
   return data;
 }
 
-// Load accepted requests
 async function loadAcceptedRequests() {
   const data = await fetchFairyAPI('/api/fairy/requests/accepted');
   if (data && data.requests) {
@@ -82,7 +71,6 @@ async function loadAcceptedRequests() {
   return data;
 }
 
-// Create a new request
 async function createRequest(location, amount, description) {
   const data = await fetchFairyAPI('/api/fairy/request', {
     method: 'POST',
@@ -100,7 +88,6 @@ async function createRequest(location, amount, description) {
   return false;
 }
 
-// Accept a request
 async function acceptRequest(requestId) {
   const data = await fetchFairyAPI('/api/fairy/request/accept', {
     method: 'POST',
@@ -117,7 +104,6 @@ async function acceptRequest(requestId) {
   return false;
 }
 
-// Cancel a request
 async function cancelRequest(requestId) {
   const data = await fetchFairyAPI('/api/fairy/request/cancel', {
     method: 'POST',
@@ -133,7 +119,6 @@ async function cancelRequest(requestId) {
   return false;
 }
 
-// Confirm a request (fairy side)
 async function confirmRequest(requestId) {
   const data = await fetchFairyAPI('/api/fairy/request/confirm', {
     method: 'POST',
@@ -149,7 +134,6 @@ async function confirmRequest(requestId) {
   return false;
 }
 
-// Rate a request (requestor side)
 async function rateRequest(requestId, rating, comment) {
   const data = await fetchFairyAPI('/api/fairy/request/rate', {
     method: 'POST',
@@ -167,7 +151,6 @@ async function rateRequest(requestId, rating, comment) {
   return false;
 }
 
-// Load leaderboard
 async function loadLeaderboard(timeframe = 'all') {
   const data = await fetchFairyAPI(`/api/fairy/leaderboard?timeframe=${timeframe}`);
   if (data && data.fairies) {
@@ -177,25 +160,20 @@ async function loadLeaderboard(timeframe = 'all') {
   return data;
 }
 
-// UI UPDATES
 
-// Update fairy status UI
 function updateFairyStatusUI() {
   const status = fairyState.fairyStatus;
   
-  // Toggle switch
   const statusToggle = document.getElementById('fairy-status-toggle');
   if (statusToggle) {
     statusToggle.checked = status?.is_active;
   }
   
-  // Max amount input
   const maxAmountInput = document.getElementById('max-transaction-amount');
   if (maxAmountInput) {
     maxAmountInput.value = status?.max_transaction_amount || '';
   }
   
-  // Stats
   const totalHelped = document.getElementById('total-helped-amount');
   if (totalHelped) {
     totalHelped.textContent = (status?.total_helped_amount || 0).toFixed(2);
@@ -211,7 +189,6 @@ function updateFairyStatusUI() {
     ratingAvg.textContent = (status?.rating_average || 0).toFixed(1);
   }
   
-  // Status badge
   const statusBadge = document.getElementById('fairy-status-badge');
   if (statusBadge) {
     statusBadge.textContent = status?.is_active ? 'Active' : 'Inactive';
@@ -219,7 +196,6 @@ function updateFairyStatusUI() {
   }
 }
 
-// Create a request card HTML
 function createRequestCardHTML(request) {
   const statusClasses = {
     'pending': 'pending',
@@ -237,10 +213,8 @@ function createRequestCardHTML(request) {
   
   const statusClass = statusClasses[request.status] || 'pending';
   
-  // Different buttons based on status and role
   let buttons = '';
   
-  // For request owner
   if (request.requestor_id == localStorage.getItem('userId')) {
     if (request.status === 'pending') {
       buttons = `<button class="cancel-button" onclick="cancelRequest(${request.id})">Cancel</button>`;
@@ -248,7 +222,6 @@ function createRequestCardHTML(request) {
       buttons = `<button class="rate-button" onclick="showRatingForm(${request.id})">Rate & Confirm</button>`;
     }
   } 
-  // For fairy
   else if (request.fairy_id == localStorage.getItem('userId')) {
     if (request.status === 'accepted' && !request.fairy_confirmed) {
       buttons = `<button class="confirm-button" onclick="confirmRequest(${request.id})">Confirm Completed</button>`;
@@ -295,7 +268,6 @@ function createRequestCardHTML(request) {
   `;
 }
 
-// Update my requests UI
 function updateMyRequestsUI() {
   const requestsContainer = document.getElementById('my-requests');
   if (!requestsContainer) return;
@@ -309,7 +281,6 @@ function updateMyRequestsUI() {
   requestsContainer.innerHTML = html;
 }
 
-// Update pending requests UI
 function updatePendingRequestsUI() {
   const requestsContainer = document.getElementById('pending-requests');
   if (!requestsContainer) return;
@@ -360,7 +331,6 @@ function updatePendingRequestsUI() {
   requestsContainer.innerHTML = html;
 }
 
-// Update accepted requests UI
 function updateAcceptedRequestsUI() {
   const requestsContainer = document.getElementById('accepted-requests');
   if (!requestsContainer) return;
@@ -415,7 +385,6 @@ function updateAcceptedRequestsUI() {
   requestsContainer.innerHTML = html;
 }
 
-// Update leaderboard UI
 function updateLeaderboardUI() {
   const leaderboardContainer = document.getElementById('leaderboard');
   if (!leaderboardContainer) return;
@@ -459,16 +428,12 @@ function updateLeaderboardUI() {
   leaderboardContainer.innerHTML = html;
 }
 
-// Show rating form
 function showRatingForm(requestId) {
-  // Find the request card
   const requestCard = document.querySelector(`.request-card[data-id="${requestId}"]`);
   if (!requestCard) return;
   
-  // Check if rating form already exists
   if (requestCard.querySelector('.rating-form')) return;
   
-  // Create rating form
   const ratingForm = document.createElement('div');
   ratingForm.className = 'rating-form';
   ratingForm.innerHTML = `
@@ -487,20 +452,16 @@ function showRatingForm(requestId) {
     </div>
   `;
   
-  // Add form to request card
   requestCard.appendChild(ratingForm);
   
-  // Add star rating functionality
   const stars = ratingForm.querySelectorAll('.stars i');
   stars.forEach(star => {
     star.addEventListener('click', () => {
       const value = parseInt(star.getAttribute('data-value'));
       const starsContainer = star.parentElement;
       
-      // Set data-rating attribute
       starsContainer.setAttribute('data-rating', value);
       
-      // Update active class
       stars.forEach(s => {
         if (parseInt(s.getAttribute('data-value')) <= value) {
           s.classList.add('active');
@@ -512,7 +473,6 @@ function showRatingForm(requestId) {
   });
 }
 
-// Hide rating form
 function hideRatingForm(requestId) {
   const requestCard = document.querySelector(`.request-card[data-id="${requestId}"]`);
   if (!requestCard) return;
@@ -523,7 +483,6 @@ function hideRatingForm(requestId) {
   }
 }
 
-// Submit rating
 async function submitRating(requestId) {
   const requestCard = document.querySelector(`.request-card[data-id="${requestId}"]`);
   if (!requestCard) return;
@@ -547,20 +506,16 @@ async function submitRating(requestId) {
   }
 }
 
-// Create demo data for testing
 async function createDemoData() {
-  // Check if we already created demo data
   const demoDone = localStorage.getItem('demoDataCreated');
   if (demoDone) return;
   
   console.log('Creating demo data...');
   
   try {
-    // Enable fairy status for current user
     await toggleFairyStatus(true, 50);
     console.log('Enabled fairy status');
     
-    // Create some sample requests
     const locations = ['Lone Mountain', 'Market Cafe', 'Wolf & Kettle', 'Crossroads Cafe'];
     const amounts = [10.99, 15.50, 8.75, 12.25];
     const descriptions = [
@@ -570,7 +525,6 @@ async function createDemoData() {
       'Any fairy available to help with dinner?'
     ];
     
-    // Create 3 demo requests
     for (let i = 0; i < 3; i++) {
       const location = locations[i % locations.length];
       const amount = amounts[i % amounts.length];
@@ -580,7 +534,6 @@ async function createDemoData() {
       console.log(`Created demo request ${i+1}`);
     }
     
-    // Mark demo data as created
     localStorage.setItem('demoDataCreated', 'true');
     console.log('Demo data created successfully');
   } catch (error) {
@@ -588,17 +541,14 @@ async function createDemoData() {
   }
 }
 
-// Initialize fairy functionality
 document.addEventListener('DOMContentLoaded', async () => {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
   
-  // Load based on current page
   if (currentPage === 'fairy-request.html') {
     console.log('Initializing fairy request page');
     try {
       await loadMyRequests();
       
-      // Set up request form
       const requestForm = document.getElementById('request-form');
       if (requestForm) {
         requestForm.addEventListener('submit', async (e) => {
@@ -620,7 +570,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
       
-      // Create demo data
       await createDemoData();
     } catch (error) {
       console.error('Error initializing fairy request page:', error);
@@ -633,7 +582,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadPendingRequests();
       await loadAcceptedRequests();
       
-      // Set up status toggle
       const statusToggle = document.getElementById('fairy-status-toggle');
       if (statusToggle) {
         statusToggle.addEventListener('change', async (e) => {
@@ -643,7 +591,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
       
-      // Set up max amount input
       const maxAmountInput = document.getElementById('max-transaction-amount');
       if (maxAmountInput) {
         maxAmountInput.addEventListener('change', async (e) => {
@@ -654,7 +601,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
       
-      // Add refresh button functionality
       const refreshButton = document.getElementById('refresh-requests');
       if (refreshButton) {
         refreshButton.addEventListener('click', async () => {
@@ -672,7 +618,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await loadLeaderboard();
       
-      // Set up timeframe filter
       const timeframeSelect = document.getElementById('timeframe-select');
       if (timeframeSelect) {
         timeframeSelect.addEventListener('change', async (e) => {

@@ -1,12 +1,10 @@
 const jwt = require('jsonwebtoken');
 
-// Different secret keys to test
 const secrets = {
   original: 'flexibudget-default-secret-key',
   new: 'your-secret-key'
 };
 
-// Mock user for token generation
 const user = {
   id: 1,
   student_id: '123456',
@@ -14,7 +12,6 @@ const user = {
   email: 'test@example.com'
 };
 
-// Generate tokens with both secrets
 console.log('=== Generating tokens ===');
 const originalPayload = {
   user_id: user.id,
@@ -33,7 +30,6 @@ const newToken = jwt.sign(newPayload, secrets.new, { expiresIn: '1h' });
 console.log('Original token:', originalToken);
 console.log('New token:', newToken);
 
-// Verify tokens with both secrets
 console.log('\n=== Verifying tokens ===');
 
 console.log('\nVerifying original token with original secret:');
@@ -68,7 +64,6 @@ try {
   console.log('❌ Invalid:', err.message);
 }
 
-// Generate a dummy token with generic secret for testing
 const genericToken = jwt.sign({ foo: 'bar' }, 'generic-secret');
 
 console.log('\nDummy token for testing:', genericToken); 

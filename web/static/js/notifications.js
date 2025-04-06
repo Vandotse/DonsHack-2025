@@ -1,14 +1,12 @@
 const notificationSystem = {
   notificationsEnabled: false,
   
-  // Initialize the notification system
   init: function() {
     this.checkPermission();
     this.loadSettings();
     this.attachEventListeners();
   },
   
-  // Check if browser supports notifications and if permission is granted
   checkPermission: function() {
     if (!("Notification" in window)) {
       console.log("This browser does not support desktop notifications");
@@ -25,7 +23,6 @@ const notificationSystem = {
     return false;
   },
   
-  // Request permission from user
   requestPermission: function() {
     return new Promise((resolve, reject) => {
       Notification.requestPermission()
@@ -45,7 +42,6 @@ const notificationSystem = {
     });
   },
   
-  // Load user notification settings from localStorage
   loadSettings: function() {
     const settings = JSON.parse(localStorage.getItem('userSettings')) || {};
     
@@ -55,16 +51,13 @@ const notificationSystem = {
     this.weeklyReports = settings.weeklyReports !== undefined ? settings.weeklyReports : true;
   },
   
-  // Attach event listeners for notification settings
   attachEventListeners: function() {
     document.addEventListener('DOMContentLoaded', () => {
-      // Find notification bell icon if it exists
       const notificationBtn = document.getElementById('notifications');
       if (notificationBtn) {
         notificationBtn.addEventListener('click', () => this.showNotificationCenter());
       }
       
-      // Find enable notifications button if it exists
       const enableNotificationsBtn = document.getElementById('enable-notifications');
       if (enableNotificationsBtn) {
         enableNotificationsBtn.addEventListener('click', () => this.requestPermission());
@@ -72,7 +65,6 @@ const notificationSystem = {
     });
   },
   
-  // Send welcome notification
   sendWelcomeNotification: function() {
     this.sendNotification(
       "Notifications Enabled", 
@@ -80,7 +72,6 @@ const notificationSystem = {
     );
   },
   
-  // Send a notification
   sendNotification: function(title, message, options = {}) {
     if (!this.notificationsEnabled) {
       console.log("Notifications not enabled");
@@ -110,7 +101,6 @@ const notificationSystem = {
     return false;
   },
   
-  // Send budget warning notification
   sendBudgetWarning: function(percentage) {
     if (!this.budgetWarnings) return false;
     
@@ -132,7 +122,6 @@ const notificationSystem = {
     });
   },
   
-  // Send transaction notification
   sendTransactionNotification: function(transaction) {
     if (!this.transactionNotifications) return false;
     
@@ -144,7 +133,6 @@ const notificationSystem = {
     });
   },
   
-  // Send weekly report notification
   sendWeeklyReportNotification: function(spent, budget) {
     if (!this.weeklyReports) return false;
     
@@ -157,9 +145,7 @@ const notificationSystem = {
     });
   },
   
-  // Show notification center (when notification bell is clicked)
   showNotificationCenter: function() {
-    // If not enabled, request permission
     if (!this.notificationsEnabled && Notification.permission !== "denied") {
       this.requestPermission()
         .then(granted => {
@@ -172,11 +158,9 @@ const notificationSystem = {
     } else if (Notification.permission === "denied") {
       alert("Notifications are blocked. Please enable them in your browser settings to receive budget alerts.");
     } else {
-      // In a real app, this would display a notification center UI
       alert("You have no new notifications");
     }
   }
 };
 
-// Initialize the notification system
 notificationSystem.init(); 

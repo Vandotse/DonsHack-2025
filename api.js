@@ -1,7 +1,6 @@
 const db = require('./db');
 const auth = require('./auth');
 
-// Location icons mapping
 const locationIcons = {
   'Campus Café': 'fa-utensils',
   'University Bookstore': 'fa-book',
@@ -10,7 +9,6 @@ const locationIcons = {
   'Late Night Grill': 'fa-hamburger'
 };
 
-// Authentication routes
 async function handleLogin(req, res) {
   try {
     const { student_id, password } = req.body;
@@ -19,7 +17,6 @@ async function handleLogin(req, res) {
       return res.status(400).json({ error: 'Student ID and password are required' });
     }
     
-    // First check if the user exists
     const user = await db.getUserByStudentId(student_id);
     if (!user) {
       return res.status(401).json({ 
@@ -27,7 +24,6 @@ async function handleLogin(req, res) {
       });
     }
     
-    // Then attempt the login
     const loginResult = await auth.login(student_id, password);
     if (!loginResult) {
       return res.status(401).json({ error: 'Incorrect password' });
@@ -61,14 +57,10 @@ async function handleRegister(req, res) {
 }
 
 function handleLogout(req, res) {
-  // In a stateless JWT authentication system, we don't need to do anything server-side
-  // The client should discard the token
   res.json({ success: true });
 }
 
-// User routes
 function getCurrentUser(req, res) {
-  // User information is already attached to the request by the auth middleware
   const { id, student_id, name, email } = req.user;
   
   res.json({
@@ -87,7 +79,6 @@ async function getUserBalance(req, res) {
       return res.status(404).json({ error: 'Balance not found' });
     }
     
-    // Calculate spent amount
     const spentAmount = balance.starting_balance - balance.current_balance;
     
     res.json({
@@ -102,7 +93,6 @@ async function getUserBalance(req, res) {
   }
 }
 
-// Transaction routes
 async function getTransactions(req, res) {
   try {
     const limit = parseInt(req.query.limit) || 10;
@@ -110,7 +100,6 @@ async function getTransactions(req, res) {
     
     const result = await db.getUserTransactions(req.user.id, limit, offset);
     
-    // Add icons to transactions
     const defaultIcon = 'fa-credit-card';
     const transactionsWithIcons = result.transactions.map(tx => {
       const icon = locationIcons[tx.location] || defaultIcon;
@@ -141,13 +130,10 @@ async function createTransaction(req, res) {
       return res.status(400).json({ error: 'Amount must be positive' });
     }
     
-    // Check budget settings
     const settings = await db.getBudgetSettings(req.user.id);
     
-    // Get current balance
     const balance = await db.getUserBalance(req.user.id);
     
-    // Check if transaction would exceed balance and strict budget is enabled
     if (settings.strict_budget && balance.current_balance < amount) {
       return res.status(403).json({ 
         error: 'Transaction exceeds available balance with strict budget enabled' 
@@ -156,7 +142,6 @@ async function createTransaction(req, res) {
     
     const transaction = await db.createTransaction(req.user.id, amount, location, description);
     
-    // Add icon
     const icon = locationIcons[transaction.location] || 'fa-credit-card';
     transaction.icon = icon;
     
@@ -167,7 +152,6 @@ async function createTransaction(req, res) {
   }
 }
 
-// Budget routes
 async function getBudget(req, res) {
   try {
     const settings = await db.getBudgetSettings(req.user.id);
@@ -176,7 +160,6 @@ async function getBudget(req, res) {
       return res.status(404).json({ error: 'Budget settings not found' });
     }
     
-    // Convert SQLite boolean integers to JavaScript booleans
     res.json({
       id: settings.id,
       user_id: settings.user_id,
@@ -217,10 +200,8 @@ async function updateBudget(req, res) {
     
     await db.updateBudgetSettings(req.user.id, settings);
     
-    // Get updated settings
     const updatedSettings = await db.getBudgetSettings(req.user.id);
     
-    // Convert SQLite boolean integers to JavaScript booleans
     res.json({
       id: updatedSettings.id,
       user_id: updatedSettings.user_id,
@@ -237,7 +218,6 @@ async function updateBudget(req, res) {
   }
 }
 
-// Flexi Fairy routes
 async function getFairyStatus(req, res) {
   try {
     const status = await db.getFairyStatus(req.user.id);
@@ -277,7 +257,6 @@ async function toggleFairyStatus(req, res) {
     
     await db.toggleFairyStatus(req.user.id, is_active, max_transaction_amount);
     
-    // Get updated status
     const status = await db.getFairyStatus(req.user.id);
     
     res.json({
@@ -299,11 +278,10 @@ async function getActiveFairies(req, res) {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const offset = parseInt(req.query.offset) || 0;
-    const sortBy = req.query.sort_by || 'rating'; // rating, amount, count
+    const sortBy = req.query.sort_by || 'rating';
     
     const result = await db.getActiveFairies(limit, offset, sortBy);
     
-    // Format the fairies data
     const formattedFairies = result.fairies.map(fairy => ({
       id: fairy.id,
       user_id: fairy.user_id,
@@ -337,7 +315,6 @@ async function createFairyRequest(req, res) {
       return res.status(400).json({ error: 'Location and amount are required' });
     }
     
-    // Validate location
     const validLocations = [
       'The Market Cafe', 
       'Undercaf', 
@@ -351,7 +328,6 @@ async function createFairyRequest(req, res) {
       });
     }
     
-    // Validate amount
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       return res.status(400).json({ error: 'Amount must be a positive number' });
@@ -359,7 +335,6 @@ async function createFairyRequest(req, res) {
     
     const result = await db.createFairyRequest(req.user.id, location, amountNum, description);
     
-    // Get the created request
     const request = await db.getFairyRequest(result.lastID);
     
     res.json(request);
@@ -434,7 +409,6 @@ async function acceptFairyRequest(req, res) {
       return res.status(400).json({ error: 'request_id is required' });
     }
     
-    // Check if user is a fairy
     const fairyStatus = await db.getFairyStatus(req.user.id);
     
     if (!fairyStatus || !fairyStatus.is_active) {
@@ -458,14 +432,12 @@ async function confirmFairyRequest(req, res) {
       return res.status(400).json({ error: 'request_id is required' });
     }
     
-    // Get the request to check roles
     const request = await db.getFairyRequest(request_id);
     
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
     
-    // Determine if the user is the requestor or the fairy
     const isRequestor = request.requestor_id === req.user.id;
     const isFairy = request.fairy_id === req.user.id;
     
@@ -490,25 +462,21 @@ async function rateFairy(req, res) {
       return res.status(400).json({ error: 'request_id and rating are required' });
     }
     
-    // Validate rating
     const ratingNum = parseInt(rating);
     if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
     
-    // Get the request to check roles
     const request = await db.getFairyRequest(request_id);
     
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
     
-    // Only the requestor can rate the fairy
     if (request.requestor_id !== req.user.id) {
       return res.status(403).json({ error: 'Only the requestor can rate the fairy' });
     }
     
-    // Ensure the request is completed
     if (request.status !== 'completed') {
       return res.status(400).json({ error: 'Only completed requests can be rated' });
     }
@@ -529,24 +497,19 @@ async function rateFairy(req, res) {
 }
 
 module.exports = {
-  // Auth routes
   handleLogin,
   handleRegister,
   handleLogout,
   
-  // User routes
   getCurrentUser,
   getUserBalance,
   
-  // Transaction routes
   getTransactions,
   createTransaction,
   
-  // Budget routes
   getBudget,
   updateBudget,
   
-  // Flexi Fairy endpoints
   getFairyStatus,
   toggleFairyStatus,
   getActiveFairies,

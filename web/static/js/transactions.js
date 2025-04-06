@@ -1,16 +1,11 @@
-// Transactions array (will be populated from API)
 let transactions = [];
 
-// Load transactions from API
 async function loadTransactions() {
   try {
-    // Use fetchAPI from main.js
     const response = await fetchAPI('/api/transactions');
     
-    // Update transactions array
     transactions = response.transactions || [];
     
-    // Display transactions
     displayTransactions();
     
     return transactions;
@@ -18,7 +13,6 @@ async function loadTransactions() {
     console.error('Failed to load transactions:', error);
     showMessage('Failed to load transactions', 'error');
     
-    // If unauthorized, logout
     if (error.message.includes('Unauthorized')) {
       logoutUser();
     }
@@ -28,7 +22,6 @@ async function loadTransactions() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Load transactions if we're on a page that displays them
   if (document.getElementById('transaction-list')) {
     loadTransactions();
   }
@@ -40,13 +33,11 @@ function displayTransactions() {
   
   transactionList.innerHTML = ''; 
   
-  // Show "No transactions" message if no transactions
   if (!transactions || transactions.length === 0) {
     transactionList.innerHTML = '<div class="empty-state">No transactions yet</div>';
     return;
   }
   
-  // Use all transactions on the transactions page
   const isTransactionsPage = window.location.href.includes('transactions.html');
   const transactionsToDisplay = isTransactionsPage ? transactions : transactions.slice(0, 5);
   
@@ -106,14 +97,11 @@ function getIconForTransaction(name) {
 
 async function addNewTransaction(location, amount, description = '') {
   try {
-    // Check if this transaction will exceed the weekly budget
     const settings = JSON.parse(localStorage.getItem('userSettings')) || {};
     const strictBudget = settings.strictBudget !== undefined ? settings.strictBudget : false;
     const amountNum = parseFloat(amount);
     
-    // If strict budget is enabled and this transaction would exceed the weekly budget
     if (strictBudget && userData.currentWeekSpent + amountNum > userData.weeklyBudget) {
-      // User must confirm the transaction
       const isConfirmed = confirm(
         `Warning: This transaction will exceed your weekly budget of $${userData.weeklyBudget.toFixed(2)}.\n\n` +
         `Current weekly spending: $${userData.currentWeekSpent.toFixed(2)}\n` +
@@ -127,7 +115,6 @@ async function addNewTransaction(location, amount, description = '') {
       }
     }
     
-    // Create transaction through API
     const newTransaction = await fetchAPI('/api/transactions/new', {
       method: 'POST',
       body: JSON.stringify({
@@ -137,18 +124,15 @@ async function addNewTransaction(location, amount, description = '') {
       })
     });
     
-    // Refresh user data and transactions
     await loadUserData();
     await loadTransactions();
     
-    // Show success message
     showMessage('Transaction added successfully');
     
     return newTransaction;
   } catch (error) {
     console.error('Failed to add transaction:', error);
     
-    // Don't show error for user cancellation
     if (error.message !== 'Transaction cancelled') {
       showMessage('Failed to add transaction: ' + error.message, 'error');
     }
@@ -158,7 +142,6 @@ async function addNewTransaction(location, amount, description = '') {
 }
 
 function showAddTransactionForm() {
-  // Check if form already exists to prevent duplicates
   if (document.querySelector('.add-transaction-form')) {
     return;
   }
@@ -299,7 +282,6 @@ function showAddTransactionForm() {
   
   document.head.appendChild(formStyle);
   
-  // Focus on the name input
   setTimeout(() => {
     document.getElementById('transaction-name').focus();
   }, 100);
@@ -311,7 +293,6 @@ function showAddTransactionForm() {
     }
   };
   
-  // Handle save transaction
   document.getElementById('save-transaction').addEventListener('click', async () => {
     const name = document.getElementById('transaction-name').value;
     const amount = document.getElementById('transaction-amount').value;
@@ -327,7 +308,6 @@ function showAddTransactionForm() {
       return;
     }
     
-    // Disable the save button
     const saveButton = document.getElementById('save-transaction');
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
@@ -336,25 +316,21 @@ function showAddTransactionForm() {
       await addNewTransaction(name, amount, description);
       closeForm();
     } catch (error) {
-      // Error is already handled in addNewTransaction function
       saveButton.disabled = false;
       saveButton.textContent = 'Save';
     }
   });
   
-  // Handle cancel button
   document.getElementById('cancel-transaction').addEventListener('click', () => {
     closeForm();
   });
   
-  // Handle overlay click
   document.querySelector('.form-overlay').addEventListener('click', (e) => {
     if (e.target === document.querySelector('.form-overlay')) {
       closeForm();
     }
   });
   
-  // Handle keyboard shortcuts
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeForm();

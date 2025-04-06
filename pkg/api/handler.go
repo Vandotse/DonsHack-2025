@@ -18,7 +18,6 @@ func NewHandler(db *models.DB) *Handler {
 	return &Handler{db: db}
 }
 
-// GetCurrentUser returns the user information for the authenticated user
 func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -53,7 +52,6 @@ func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(userResponse)
 }
 
-// GetUserBalance returns the balance information for the authenticated user
 func (h *Handler) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -72,7 +70,6 @@ func (h *Handler) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate spent amount
 	spentAmount := balance.StartingBalance - balance.CurrentBalance
 
 	balanceResponse := struct {
@@ -91,7 +88,6 @@ func (h *Handler) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(balanceResponse)
 }
 
-// GetTransactions returns the list of transactions for the authenticated user with pagination
 func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -118,7 +114,6 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add icons based on transaction location (normally these would be stored in the database)
 	type TransactionWithIcon struct {
 		ID              int64     `json:"id"`
 		UserID          int64     `json:"user_id"`
@@ -129,7 +124,6 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		Icon            string    `json:"icon"`
 	}
 
-	// Map to store location to icon mappings
 	locationIcons := map[string]string{
 		"Campus Café":         "fa-utensils",
 		"University Bookstore": "fa-book",
@@ -138,10 +132,8 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		"Late Night Grill":    "fa-hamburger",
 	}
 
-	// Default icon
 	defaultIcon := "fa-credit-card"
 
-	// Create response with icons
 	txWithIcons := make([]TransactionWithIcon, 0, len(transactions))
 	for _, tx := range transactions {
 		icon, ok := locationIcons[tx.Location]
@@ -176,7 +168,6 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// CreateTransaction creates a new transaction for the authenticated user
 func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -210,27 +201,23 @@ func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check budget settings
 	settings, err := h.db.GetBudgetSettings(userID)
 	if err != nil {
 		http.Error(w, "Failed to get budget settings", http.StatusInternalServerError)
 		return
 	}
 
-	// Get current balance
 	balance, err := h.db.GetUserBalance(userID)
 	if err != nil {
 		http.Error(w, "Failed to get balance", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if transaction would exceed balance and strict budget is enabled
 	if settings.StrictBudget && balance.CurrentBalance < req.Amount {
 		http.Error(w, "Transaction exceeds available balance with strict budget enabled", http.StatusForbidden)
 		return
 	}
 
-	// Create transaction
 	tx, err := h.db.CreateTransaction(userID, req.Amount, req.Location, req.Description)
 	if err != nil {
 		http.Error(w, "Failed to create transaction", http.StatusInternalServerError)
@@ -241,7 +228,6 @@ func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tx)
 }
 
-// GetBudget returns the budget settings for the authenticated user
 func (h *Handler) GetBudget(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -264,7 +250,6 @@ func (h *Handler) GetBudget(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(settings)
 }
 
-// UpdateBudget updates the budget settings for the authenticated user
 func (h *Handler) UpdateBudget(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -283,22 +268,18 @@ func (h *Handler) UpdateBudget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Make sure the user ID in the request matches the authenticated user
 	req.UserID = userID
 
-	// Validate weekly budget
 	if req.WeeklyBudget <= 0 {
 		http.Error(w, "Weekly budget must be positive", http.StatusBadRequest)
 		return
 	}
 
-	// Update settings
 	if err := h.db.UpdateBudgetSettings(&req); err != nil {
 		http.Error(w, "Failed to update budget settings", http.StatusInternalServerError)
 		return
 	}
 
-	// Return updated settings
 	settings, err := h.db.GetBudgetSettings(userID)
 	if err != nil {
 		http.Error(w, "Failed to get updated budget settings", http.StatusInternalServerError)

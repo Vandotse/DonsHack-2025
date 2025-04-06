@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// GetUserBalance retrieves the balance information for a user
 func (db *DB) GetUserBalance(userID int64) (*Balance, error) {
 	var balance Balance
 	err := db.QueryRow(`
@@ -21,7 +20,6 @@ func (db *DB) GetUserBalance(userID int64) (*Balance, error) {
 	return &balance, nil
 }
 
-// UpdateBalance updates a user's balance after a transaction
 func (db *DB) UpdateBalance(userID int64, newAmount float64, tx *Transaction) error {
 	dbTx, err := db.Begin()
 	if err != nil {
@@ -29,7 +27,6 @@ func (db *DB) UpdateBalance(userID int64, newAmount float64, tx *Transaction) er
 	}
 	defer dbTx.Rollback()
 
-	// Update balance
 	_, err = dbTx.Exec(`
 		UPDATE balances
 		SET current_balance = ?, updated_at = ?
@@ -40,7 +37,6 @@ func (db *DB) UpdateBalance(userID int64, newAmount float64, tx *Transaction) er
 		return fmt.Errorf("error updating balance: %w", err)
 	}
 
-	// Record transaction
 	_, err = dbTx.Exec(`
 		INSERT INTO transactions (user_id, amount, location, description, transaction_date)
 		VALUES (?, ?, ?, ?, ?)
@@ -57,7 +53,6 @@ func (db *DB) UpdateBalance(userID int64, newAmount float64, tx *Transaction) er
 	return nil
 }
 
-// GetBudgetSettings retrieves the budget settings for a user
 func (db *DB) GetBudgetSettings(userID int64) (*BudgetSettings, error) {
 	var settings BudgetSettings
 	err := db.QueryRow(`
@@ -76,7 +71,6 @@ func (db *DB) GetBudgetSettings(userID int64) (*BudgetSettings, error) {
 	return &settings, nil
 }
 
-// UpdateBudgetSettings updates a user's budget settings
 func (db *DB) UpdateBudgetSettings(settings *BudgetSettings) error {
 	_, err := db.Exec(`
 		UPDATE budget_settings

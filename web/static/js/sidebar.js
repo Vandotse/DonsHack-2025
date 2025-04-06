@@ -1,7 +1,3 @@
-/**
- * Standard sidebar component for all pages
- * This ensures a consistent navigation experience
- */
 
 document.addEventListener('DOMContentLoaded', () => {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';

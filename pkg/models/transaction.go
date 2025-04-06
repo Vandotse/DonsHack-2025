@@ -5,9 +5,7 @@ import (
 	"time"
 )
 
-// GetUserTransactions retrieves transactions for a specific user with pagination
 func (db *DB) GetUserTransactions(userID int64, limit, offset int) ([]Transaction, int, error) {
-	// Get total count
 	var total int
 	err := db.QueryRow(`
 		SELECT COUNT(*) FROM transactions WHERE user_id = ?
@@ -17,12 +15,10 @@ func (db *DB) GetUserTransactions(userID int64, limit, offset int) ([]Transactio
 		return nil, 0, fmt.Errorf("error getting transaction count: %w", err)
 	}
 
-	// If no limit specified, use default
 	if limit <= 0 {
 		limit = 10
 	}
 
-	// Get transactions with pagination
 	rows, err := db.Query(`
 		SELECT id, user_id, amount, location, description, transaction_date
 		FROM transactions
@@ -56,18 +52,14 @@ func (db *DB) GetUserTransactions(userID int64, limit, offset int) ([]Transactio
 	return transactions, total, nil
 }
 
-// CreateTransaction creates a new transaction and updates the user's balance
 func (db *DB) CreateTransaction(userID int64, amount float64, location, description string) (*Transaction, error) {
-	// Get current balance
 	balance, err := db.GetUserBalance(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting balance: %w", err)
 	}
 
-	// Calculate new balance
 	newBalance := balance.CurrentBalance - amount
 	
-	// Create transaction
 	tx := &Transaction{
 		UserID:          userID,
 		Amount:          amount,
@@ -76,12 +68,10 @@ func (db *DB) CreateTransaction(userID int64, amount float64, location, descript
 		TransactionDate: time.Now(),
 	}
 
-	// Update balance and record transaction
 	if err := db.UpdateBalance(userID, newBalance, tx); err != nil {
 		return nil, fmt.Errorf("error updating balance: %w", err)
 	}
 
-	// Fetch the created transaction to get its ID
 	rows, err := db.Query(`
 		SELECT id, user_id, amount, location, description, transaction_date
 		FROM transactions

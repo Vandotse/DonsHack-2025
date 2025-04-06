@@ -1,11 +1,8 @@
-// API helper function
 async function fetchAPI(endpoint, options = {}) {
-  // Add auth token to headers if available
   const token = localStorage.getItem('authToken');
   
   console.log('Auth token from localStorage:', token ? 'Present (length: ' + token.length + ')' : 'Not found');
   
-  // If token is required and not available, redirect to login
   if (!token && !endpoint.includes('/login') && !endpoint.includes('/register')) {
     console.error('No auth token available for protected endpoint:', endpoint);
     window.location.href = 'login.html';
@@ -31,13 +28,10 @@ async function fetchAPI(endpoint, options = {}) {
     
     console.log(`${endpoint} response status:`, response.status);
     
-    // Handle 401 Unauthorized before parsing JSON
     if (response.status === 401) {
       console.error('Authentication failed (401) for endpoint:', endpoint);
       
-      // Only clear auth data and redirect if we're not already on the login page
       if (!window.location.href.includes('login.html')) {
-        // Clear invalid auth data and redirect to login
         localStorage.removeItem('authToken');
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
@@ -63,7 +57,6 @@ async function fetchAPI(endpoint, options = {}) {
   }
 }
 
-// User data placeholder (will be populated from API)
 let userData = {
   username: localStorage.getItem('userName') || "Student",
   startingBalance: 0,
@@ -74,16 +67,12 @@ let userData = {
   budgetPercentage: 0
 };
 
-// Load user data from API
 async function loadUserData() {
   try {
-    // Get user balance
     const balance = await fetchAPI('/api/users/me/balance');
     
-    // Get budget settings
     const budget = await fetchAPI('/api/budget');
     
-    // Update user data
     userData = {
       username: localStorage.getItem('userName') || "Student",
       startingBalance: balance.starting_balance,
@@ -91,10 +80,8 @@ async function loadUserData() {
       spent: balance.spent_amount,
       weeklyBudget: budget.weekly_budget,
       
-      // Calculate the weekly spent - don't cap it at the budget amount
       currentWeekSpent: balance.spent_amount,
         
-      // Calculate budget percentage - don't cap at 100% to show values over budget
       budgetPercentage: Math.round((balance.spent_amount / budget.weekly_budget) * 100)
     };
     
@@ -102,14 +89,12 @@ async function loadUserData() {
   } catch (error) {
     console.error('Failed to load user data:', error);
     
-    // If unauthorized, redirect to login
     if (error.message.includes('Unauthorized')) {
       logoutUser();
     }
   }
 }
 
-// Update UI with user data
 function updateUI() {
   document.getElementById('username').textContent = userData.username;
   
@@ -127,13 +112,10 @@ function updateUI() {
   if (weeklyBudgetEl) weeklyBudgetEl.textContent = userData.weeklyBudget.toFixed(2);
   if (currentWeekSpentEl) currentWeekSpentEl.textContent = userData.currentWeekSpent.toFixed(2);
   
-  // Display actual percentage - can exceed 100%
   if (budgetPercentageEl) budgetPercentageEl.textContent = userData.budgetPercentage + '%';
   
-  // Cap the progress bar width at 100% for visual purposes
   if (budgetProgressEl) budgetProgressEl.style.width = Math.min(userData.budgetPercentage, 100) + '%';
   
-  // Update progress bar color
   const progressBar = document.getElementById('budget-progress');
   if (progressBar) {
     if (userData.budgetPercentage < 50) {
@@ -150,7 +132,6 @@ function updateUI() {
   }
 }
 
-// Refresh data from API
 async function refreshData() {
   try {
     await loadUserData();
@@ -158,14 +139,12 @@ async function refreshData() {
       await loadTransactions();
     }
     
-    // Show success message
     showMessage('Data refreshed successfully');
   } catch (error) {
     showMessage('Failed to refresh data', 'error');
   }
 }
 
-// Show a temporary message
 function showMessage(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
@@ -185,19 +164,15 @@ function showMessage(message, type = 'success') {
   }, 3000);
 }
 
-// Check spending limit and show warnings
 function checkSpendingLimit() {
   const percentSpent = userData.budgetPercentage;
   
-  // Get settings from localStorage (will be replaced with API data later)
   const settings = JSON.parse(localStorage.getItem('userSettings')) || {};
   const budgetWarnings = settings.budgetWarnings !== undefined ? settings.budgetWarnings : true;
   
   if (!budgetWarnings) return;
   
-  // Add an overspending indicator if budget exceeded
   if (percentSpent > 100) {
-    // Add a badge to the budget card if it exists
     const budgetCard = document.querySelector('.budget-card');
     if (budgetCard && !document.querySelector('.overspent-badge')) {
       const badge = document.createElement('div');
@@ -213,13 +188,11 @@ function checkSpendingLimit() {
       badge.style.top = '10px';
       badge.style.right = '10px';
       
-      // Need to ensure the budget card has position relative
       budgetCard.style.position = 'relative';
       
       budgetCard.appendChild(badge);
     }
     
-    // Also update the spent amount/budget UI to highlight overspending
     const currentWeekSpentEl = document.getElementById('current-week-spent');
     if (currentWeekSpentEl) {
       currentWeekSpentEl.style.color = 'var(--danger-color)';
@@ -242,7 +215,6 @@ function checkSpendingLimit() {
   }
 }
 
-// Show warning message
 function showWarning(message) {
   const warning = document.createElement('div');
   warning.className = 'warning-alert';
@@ -279,12 +251,10 @@ function showWarning(message) {
   }, 5000);
 }
 
-// Add logout button to sidebar
 function addLogoutButton() {
   const menu = document.querySelector('.menu');
   if (!menu) return;
   
-  // Check if logout button already exists
   if (document.getElementById('logout')) return;
   
   const logoutItem = document.createElement('li');
@@ -297,32 +267,25 @@ function addLogoutButton() {
   });
 }
 
-// Logout user
 async function logoutUser() {
   try {
-    // Call logout API (optional)
     await fetchAPI('/api/logout', { method: 'POST' });
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    // Clear local storage
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('userName');
     localStorage.removeItem('studentId');
     
-    // Redirect to login
     window.location.href = 'login.html';
   }
 }
 
-// Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
-  // Parse URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const errorParam = urlParams.get('error');
   
-  // Show error message if session expired
   if (errorParam === 'session_expired' && window.location.href.includes('login.html')) {
     const errorElement = document.getElementById('login-error');
     if (errorElement) {
@@ -331,41 +294,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // Check if user is logged in
   const token = localStorage.getItem('authToken');
   const userId = localStorage.getItem('userId');
   
-  // If this is not the login page, enforce authentication
   if (!window.location.href.includes('login.html')) {
     if (!token || !userId) {
-      // Redirect to login if not authenticated
       window.location.href = 'login.html';
       return;
     }
     
-    // Add logout button
     addLogoutButton();
     
-    // Load user data (this will also validate the token)
     try {
       await loadUserData();
     } catch (error) {
       console.error('Failed to load initial data:', error);
       
-      // If authentication fails during data loading, don't proceed
       if (error.message.includes('Authentication')) {
         return;
       }
     }
     
-    // Add refresh button handler if present
     const refreshButton = document.getElementById('refresh');
     if (refreshButton) {
       refreshButton.addEventListener('click', refreshData);
     }
   }
   
-  // Show notification prompt if browser supports it and permission not granted yet
   if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
     const notificationPrompt = document.getElementById('notification-prompt');
     if (notificationPrompt) {

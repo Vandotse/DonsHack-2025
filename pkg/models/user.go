@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// CreateUser adds a new user to the database
 func (db *DB) CreateUser(studentID, name, email, password string) (*User, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -32,7 +31,6 @@ func (db *DB) CreateUser(studentID, name, email, password string) (*User, error)
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
-	// Create initial balance record
 	_, err = tx.Exec(`
 		INSERT INTO balances (user_id, starting_balance, current_balance, updated_at)
 		VALUES (?, ?, ?, ?)
@@ -41,7 +39,6 @@ func (db *DB) CreateUser(studentID, name, email, password string) (*User, error)
 		return nil, fmt.Errorf("error creating balance: %w", err)
 	}
 
-	// Create default budget settings
 	_, err = tx.Exec(`
 		INSERT INTO budget_settings (user_id, weekly_budget, budget_warnings, strict_budget, transaction_notifications, weekly_reports, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -57,7 +54,6 @@ func (db *DB) CreateUser(studentID, name, email, password string) (*User, error)
 	return db.GetUserByID(userID)
 }
 
-// GetUserByID retrieves a user by their ID
 func (db *DB) GetUserByID(id int64) (*User, error) {
 	var user User
 	err := db.QueryRow(`
@@ -76,7 +72,6 @@ func (db *DB) GetUserByID(id int64) (*User, error) {
 	return &user, nil
 }
 
-// GetUserByStudentID retrieves a user by their student ID
 func (db *DB) GetUserByStudentID(studentID string) (*User, error) {
 	var user User
 	err := db.QueryRow(`
@@ -95,7 +90,6 @@ func (db *DB) GetUserByStudentID(studentID string) (*User, error) {
 	return &user, nil
 }
 
-// VerifyPassword checks if the provided password is correct
 func (db *DB) VerifyPassword(user *User, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	return err == nil

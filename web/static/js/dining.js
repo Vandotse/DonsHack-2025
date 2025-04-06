@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Mock data for menu items
     const menuItems = [
         {
             id: 1,
@@ -108,13 +107,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
-    // Get DOM elements
     const menuContainer = document.getElementById('menu-container');
     const mealTypeFilter = document.getElementById('meal-type');
     const dietaryFilter = document.getElementById('dietary-restriction');
     const searchInput = document.getElementById('search');
 
-    // Function to render menu items
     function renderMenuItems(items) {
         menuContainer.innerHTML = '';
         
@@ -127,12 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const menuItemElement = document.createElement('div');
             menuItemElement.className = 'menu-item';
             
-            // Create meal type badge
             const mealTypeBadge = document.createElement('div');
             mealTypeBadge.className = 'menu-item-type';
             mealTypeBadge.textContent = item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1);
             
-            // Create dietary restriction tags
             const dietaryTags = document.createElement('div');
             dietaryTags.className = 'dietary-tags';
             
@@ -141,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const tagElement = document.createElement('span');
                     tagElement.className = 'dietary-tag';
                     
-                    // Add appropriate icon
                     const iconSpan = document.createElement('span');
                     iconSpan.className = 'icon';
                     
@@ -157,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     tagElement.appendChild(iconSpan);
                     
-                    // Add text
                     const restrictionText = document.createTextNode(
                         restriction.split('-').map(word => 
                             word.charAt(0).toUpperCase() + word.slice(1)
@@ -169,7 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Create menu item content
             menuItemElement.innerHTML = `
                 <div class="menu-item-content">
                     <h3>${item.name}</h3>
@@ -184,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Filter function
     function filterMenuItems() {
         const mealType = mealTypeFilter.value;
         const dietaryRestriction = dietaryFilter.value;
@@ -192,19 +183,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let filteredItems = menuItems;
         
-        // Filter by meal type
         if (mealType !== 'all') {
             filteredItems = filteredItems.filter(item => item.mealType === mealType);
         }
         
-        // Filter by dietary restriction
         if (dietaryRestriction !== 'all') {
             filteredItems = filteredItems.filter(item => 
                 item.dietaryRestrictions.includes(dietaryRestriction)
             );
         }
         
-        // Filter by search term
         if (searchTerm) {
             filteredItems = filteredItems.filter(item => 
                 item.name.toLowerCase().includes(searchTerm)
@@ -214,15 +202,12 @@ document.addEventListener('DOMContentLoaded', function() {
         renderMenuItems(filteredItems);
     }
 
-    // Add event listeners
     mealTypeFilter.addEventListener('change', filterMenuItems);
     dietaryFilter.addEventListener('change', filterMenuItems);
     searchInput.addEventListener('input', filterMenuItems);
 
-    // Initial render
     renderMenuItems(menuItems);
 
-    // Fetch and display user name if available
     const userNameElement = document.getElementById('userName');
     if (userNameElement) {
         const userName = localStorage.getItem('userName') || "Student";
