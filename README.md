@@ -38,13 +38,3 @@ npm start
 ```
 http://localhost:3001
 ```
-
-## Development
-
-- The main application is built with HTML, CSS, and JavaScript
-- Uses Node.js for the backend server
-- Data is stored in browser's localStorage for demo purposes
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
