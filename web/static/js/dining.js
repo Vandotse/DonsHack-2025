@@ -225,17 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch and display user name if available
     const userNameElement = document.getElementById('userName');
     if (userNameElement) {
-        // Try to get user data from localStorage if available
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                if (user && user.name) {
-                    userNameElement.textContent = user.name;
-                }
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-            }
-        }
+        const userName = localStorage.getItem('userName') || "Student";
+        userNameElement.textContent = userName;
     }
 }); 
