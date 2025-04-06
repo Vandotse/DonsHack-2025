@@ -29,6 +29,11 @@ cd DonsHack-2025
 npm install
 ```
 
+2a. For demo purposes, run:
+```
+node init-demo-data.js
+```
+
 3. Start the server:
 ```
 npm start
