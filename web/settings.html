@@ -174,6 +174,9 @@
         <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
         <li><a href="transactions.html"><i class="fas fa-history"></i> Transactions</a></li>
         <li><a href="dining.html"><i class="fas fa-utensils"></i> Campus Dining</a></li>
+        <li><a href="fairy-request.html"><i class="fas fa-magic"></i> Request Help</a></li>
+        <li><a href="fairy-dashboard.html"><i class="fas fa-hands-helping"></i> Fairy Dashboard</a></li>
+        <li><a href="fairy-leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
         <li class="active"><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
       </ul>
       <div class="sidebar-footer">
@@ -261,13 +264,70 @@
         
         <button id="save-settings" class="save-button">Save Settings</button>
       </section>
+      
+      <!-- Flexi Fairy Settings -->
+      <section class="settings-container card" style="margin-top: 2rem;">
+        <h2>Flexi Fairy Settings</h2>
+        <div class="info-box" style="background-color: #f5f9ff; padding: 1rem; border-radius: 5px; margin-bottom: 1.5rem; border-left: 4px solid var(--primary-color);">
+          <p><strong>What is a Flexi Fairy?</strong></p>
+          <p>A Flexi Fairy is someone who has extra Flexi money and is willing to help other students by paying for their meals on campus.</p>
+          <p>When you become a Flexi Fairy, other students can request your help, and you can choose which requests to accept.</p>
+        </div>
+        
+        <div class="setting-row">
+          <div class="setting-info">
+            <h3>Become a Flexi Fairy</h3>
+            <p>Make yourself available to help other students with their meals</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="fairy-status">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="setting-row" id="fairy-max-amount-row" style="display: none;">
+          <div class="setting-info">
+            <h3>Maximum Transaction Amount</h3>
+            <p>Set the maximum amount you're willing to spend per request (optional)</p>
+          </div>
+          <div class="budget-input">
+            <span>$</span>
+            <input type="number" id="fairy-max-amount" min="1" step="0.01" placeholder="No limit">
+          </div>
+        </div>
+        
+        <div id="fairy-stats" style="margin-top: 1.5rem; display: none;">
+          <h3>Your Fairy Statistics</h3>
+          <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px; background: white; padding: 1rem; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="color: var(--text-light); font-size: 0.9rem;">Total Amount Helped</div>
+              <div style="font-size: 1.5rem; font-weight: 600; margin-top: 0.5rem;">$<span id="fairy-total-amount">0.00</span></div>
+            </div>
+            <div style="flex: 1; min-width: 200px; background: white; padding: 1rem; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="color: var(--text-light); font-size: 0.9rem;">Requests Fulfilled</div>
+              <div style="font-size: 1.5rem; font-weight: 600; margin-top: 0.5rem;"><span id="fairy-requests-count">0</span></div>
+            </div>
+            <div style="flex: 1; min-width: 200px; background: white; padding: 1rem; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="color: var(--text-light); font-size: 0.9rem;">Average Rating</div>
+              <div style="font-size: 1.5rem; font-weight: 600; margin-top: 0.5rem;">
+                <span id="fairy-rating">0.0</span>/5
+                <span style="font-size: 0.9rem; color: var(--text-light); margin-left: 0.5rem;">(<span id="fairy-rating-count">0</span> ratings)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <button id="save-fairy-settings" class="save-button">Save Fairy Settings</button>
+      </section>
+
     </main>
   </div>
 
   <script src="static/js/main.js"></script>
+  <script src="static/js/sidebar.js"></script>
   <script src="static/js/notifications.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       const settings = JSON.parse(localStorage.getItem('userSettings')) || {
         weeklyBudget: 100,
         budgetWarnings: true,
@@ -299,6 +359,38 @@
         }
       }
       
+      // Load Flexi Fairy status
+      try {
+        const response = await fetchAPI('/api/fairy/status');
+        
+        document.getElementById('fairy-status').checked = response.is_active;
+        
+        if (response.max_transaction_amount) {
+          document.getElementById('fairy-max-amount').value = response.max_transaction_amount;
+        }
+        
+        // Update fairy stats if they exist
+        if (response.is_active || response.total_requests_fulfilled > 0) {
+          document.getElementById('fairy-stats').style.display = 'block';
+          document.getElementById('fairy-total-amount').textContent = response.total_helped_amount.toFixed(2);
+          document.getElementById('fairy-requests-count').textContent = response.total_requests_fulfilled;
+          document.getElementById('fairy-rating').textContent = response.rating_average.toFixed(1);
+          document.getElementById('fairy-rating-count').textContent = response.rating_count;
+        }
+        
+        // Show max amount row if fairy status is active
+        if (response.is_active) {
+          document.getElementById('fairy-max-amount-row').style.display = 'flex';
+        }
+      } catch (error) {
+        console.error('Failed to load fairy status:', error);
+      }
+      
+      // Toggle fairy max amount input
+      document.getElementById('fairy-status').addEventListener('change', function() {
+        document.getElementById('fairy-max-amount-row').style.display = this.checked ? 'flex' : 'none';
+      });
+      
       document.getElementById('save-settings').addEventListener('click', () => {
         const newSettings = {
           weeklyBudget: parseFloat(document.getElementById('weekly-budget-input').value),
@@ -319,6 +411,35 @@
         }
         
         alert('Settings saved successfully');
+      });
+      
+      document.getElementById('save-fairy-settings').addEventListener('click', async () => {
+        try {
+          const isActive = document.getElementById('fairy-status').checked;
+          const maxAmount = document.getElementById('fairy-max-amount').value || null;
+          
+          const response = await fetchAPI('/api/fairy/toggle', {
+            method: 'POST',
+            body: JSON.stringify({
+              is_active: isActive,
+              max_transaction_amount: maxAmount ? parseFloat(maxAmount) : null
+            })
+          });
+          
+          // Update the stats display
+          if (response.is_active || response.total_requests_fulfilled > 0) {
+            document.getElementById('fairy-stats').style.display = 'block';
+            document.getElementById('fairy-total-amount').textContent = response.total_helped_amount.toFixed(2);
+            document.getElementById('fairy-requests-count').textContent = response.total_requests_fulfilled;
+            document.getElementById('fairy-rating').textContent = response.rating_average.toFixed(1);
+            document.getElementById('fairy-rating-count').textContent = response.rating_count;
+          }
+          
+          alert('Fairy settings saved successfully');
+        } catch (error) {
+          console.error('Failed to save fairy settings:', error);
+          alert('Failed to save fairy settings: ' + error.message);
+        }
       });
     });
   </script>

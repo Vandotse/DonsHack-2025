@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Fairy Help - FlexiBudget</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .logo img {
+      max-width: 50px;
+      margin-right: 10px;
+    }
+    
+    .logo h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    
+    .fairy-info {
+      background-color: #f5f9ff;
+      padding: 1rem;
+      border-radius: 10px;
+      border-left: 4px solid var(--primary-color);
+      margin-bottom: 2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .submit-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+    
+    .submit-button:hover {
+      background-color: var(--secondary-color);
+      color: #000;
+    }
+    
+    .submit-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .requests-history {
+      margin-top: 3rem;
+    }
+    
+    .request-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #ddd;
+    }
+    
+    .request-card.pending {
+      border-left-color: #ffc107;
+    }
+    
+    .request-card.accepted {
+      border-left-color: #17a2b8;
+    }
+    
+    .request-card.completed {
+      border-left-color: #28a745;
+    }
+    
+    .request-card.cancelled {
+      border-left-color: #dc3545;
+    }
+    
+    .request-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .request-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    
+    .request-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .request-status.pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .request-status.accepted {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+    
+    .request-status.completed {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .request-status.cancelled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .request-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .detail-item {
+      margin-bottom: 0.5rem;
+    }
+    
+    .detail-item .label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 0.2rem;
+    }
+    
+    .detail-item .value {
+      font-weight: 500;
+    }
+    
+    .request-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .request-buttons button {
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .confirm-button {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .confirm-button:hover {
+      background-color: var(--secondary-color);
+      color: #000;
+    }
+    
+    .rate-button {
+      background-color: #ffc107;
+      color: #000;
+    }
+    
+    .rate-button:hover {
+      background-color: #e0a800;
+    }
+    
+    .cancel-button {
+      background-color: #f8f9fa;
+      color: #212529;
+      border: 1px solid #ddd !important;
+    }
+    
+    .cancel-button:hover {
+      background-color: #e2e6ea;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-light);
+      font-style: italic;
+    }
+    
+    .rating-form {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .stars {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .stars i {
+      font-size: 1.5rem;
+      color: #ddd;
+      cursor: pointer;
+    }
+    
+    .stars i.active {
+      color: #ffc107;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="logo">
+        <img src="static/img/usfca-logo.png" alt="USFCA Logo">
+        <h1>FlexiBudget</h1>
+      </div>
+      <ul class="menu">
+        <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li><a href="transactions.html"><i class="fas fa-history"></i> Transactions</a></li>
+        <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        <li class="active"><a href="fairy-request.html"><i class="fas fa-magic"></i> Flexi Fairy</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <p>Version 0.1.0</p>
+      </div>
+    </nav>
+
+    <main class="content">
+      <header>
+        <div class="user-info">
+          <img src="static/img/avatar.svg" alt="User Avatar" class="avatar">
+          <div>
+            <h2>Hello, <span id="username">Student</span></h2>
+            <p>Request help from a Flexi Fairy</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Request Flexi Fairy Help</h2>
+        
+        <div class="fairy-info">
+          <p><strong>What is a Flexi Fairy?</strong></p>
+          <p>A Flexi Fairy is a student who has extra Flexi money and is willing to help others by paying for their meals on campus.</p>
+          <p>Fill out the form below to request help from a Flexi Fairy. Once submitted, your request will be visible to all active Fairies who can choose to accept it.</p>
+        </div>
+        
+        <form id="fairy-request-form">
+          <div class="form-group">
+            <label for="location">Location</label>
+            <select id="location" required>
+              <option value="" disabled selected>Select a campus location</option>
+              <option value="The Market Cafe">The Market Cafe</option>
+              <option value="Undercaf">Undercaf</option>
+              <option value="Law Cafe">Law Cafe</option>
+              <option value="Lone Mountain Cafe">Lone Mountain Cafe</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="amount">Amount Needed ($)</label>
+            <input type="number" id="amount" min="1" step="0.01" required placeholder="How much do you need?">
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description (Optional)</label>
+            <textarea id="description" placeholder="Provide additional details about your request..."></textarea>
+          </div>
+          
+          <button type="submit" class="submit-button">Submit Request</button>
+        </form>
+      </section>
+
+      <section class="requests-history card">
+        <h2>Your Fairy Requests</h2>
+        <div id="requests-container">
+          <!-- Request cards will be dynamically inserted here -->
+          <div class="empty-state">Loading your requests...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Rating Modal -->
+  <div id="rating-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: relative; max-width: 500px; margin: 100px auto; background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+      <button id="close-modal" style="position: absolute; top: 10px; right: 10px; border: none; background: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      <h3>Rate Your Fairy</h3>
+      <p>How was your experience with <span id="fairy-name">the Flexi Fairy</span>?</p>
+      
+      <div class="stars">
+        <i class="fas fa-star" data-value="1"></i>
+        <i class="fas fa-star" data-value="2"></i>
+        <i class="fas fa-star" data-value="3"></i>
+        <i class="fas fa-star" data-value="4"></i>
+        <i class="fas fa-star" data-value="5"></i>
+      </div>
+      
+      <div class="form-group">
+        <label for="comment">Comment (Optional)</label>
+        <textarea id="comment" placeholder="Tell us about your experience..."></textarea>
+      </div>
+      
+      <button id="submit-rating" class="submit-button">Submit Rating</button>
+    </div>
+  </div>
+
+  <script src="static/js/main.js"></script>
+  <script src="static/js/sidebar.js"></script>
+  <script src="static/js/fairy.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load user requests
+      loadUserRequests();
+      
+      // Handle form submission
+      document.getElementById('fairy-request-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const location = document.getElementById('location').value;
+        const amount = document.getElementById('amount').value;
+        const description = document.getElementById('description').value;
+        
+        try {
+          // Disable submit button
+          const submitButton = e.target.querySelector('button[type="submit"]');
+          submitButton.disabled = true;
+          submitButton.textContent = 'Submitting...';
+          
+          // Create request
+          await fetchAPI('/api/fairy/request', {
+            method: 'POST',
+            body: JSON.stringify({
+              location,
+              amount: parseFloat(amount),
+              description
+            })
+          });
+          
+          // Reset form
+          e.target.reset();
+          
+          // Show success message
+          showMessage('Request submitted successfully!');
+          
+          // Reload requests
+          loadUserRequests();
+        } catch (error) {
+          console.error('Error creating request:', error);
+          showMessage('Failed to submit request: ' + error.message, 'error');
+        } finally {
+          // Re-enable submit button
+          submitButton.disabled = false;
+          submitButton.textContent = 'Submit Request';
+        }
+      });
+      
+      // Handle rating modal
+      const stars = document.querySelectorAll('.stars i');
+      let selectedRating = 0;
+      let currentRequestId = null;
+      
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          selectedRating = parseInt(star.getAttribute('data-value'));
+          
+          // Update visual state
+          stars.forEach(s => {
+            if (parseInt(s.getAttribute('data-value')) <= selectedRating) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+        
+        star.addEventListener('mouseover', () => {
+          const value = parseInt(star.getAttribute('data-value'));
+          
+          stars.forEach(s => {
+            if (parseInt(s.getAttribute('data-value')) <= value) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+        
+        star.addEventListener('mouseout', () => {
+          stars.forEach(s => {
+            if (parseInt(s.getAttribute('data-value')) <= selectedRating) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+      });
+      
+      // Close modal
+      document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('rating-modal').style.display = 'none';
+      });
+      
+      // Submit rating
+      document.getElementById('submit-rating').addEventListener('click', async () => {
+        if (selectedRating === 0) {
+          showMessage('Please select a rating before submitting', 'error');
+          return;
+        }
+        
+        try {
+          const comment = document.getElementById('comment').value;
+          
+          await fetchAPI('/api/fairy/rate', {
+            method: 'POST',
+            body: JSON.stringify({
+              request_id: currentRequestId,
+              rating: selectedRating,
+              comment
+            })
+          });
+          
+          // Close modal
+          document.getElementById('rating-modal').style.display = 'none';
+          
+          // Show success message
+          showMessage('Rating submitted successfully!');
+          
+          // Reset modal
+          selectedRating = 0;
+          stars.forEach(s => s.classList.remove('active'));
+          document.getElementById('comment').value = '';
+          
+          // Reload requests
+          loadUserRequests();
+        } catch (error) {
+          console.error('Error submitting rating:', error);
+          showMessage('Failed to submit rating: ' + error.message, 'error');
+        }
+      });
+      
+      // Function to load user's requests
+      async function loadUserRequests() {
+        try {
+          const response = await fetchAPI('/api/fairy/requests/user');
+          const requestsContainer = document.getElementById('requests-container');
+          
+          if (response.requests.length === 0) {
+            requestsContainer.innerHTML = '<div class="empty-state">You haven\'t made any requests yet.</div>';
+            return;
+          }
+          
+          // Sort requests by date (newest first)
+          const sortedRequests = response.requests.sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          
+          // Generate HTML for each request
+          const requestsHTML = sortedRequests.map(request => {
+            const statusClass = request.status.toLowerCase();
+            const formattedDate = new Date(request.created_at).toLocaleDateString(undefined, {
+              weekday: 'short',
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            let statusText = request.status.charAt(0).toUpperCase() + request.status.slice(1);
+            let actionsHTML = '';
+            
+            // Add appropriate action buttons based on request status
+            if (request.status === 'accepted' && !request.requestor_confirmed) {
+              actionsHTML = `
+                <div class="request-buttons">
+                  <button class="confirm-button" data-request-id="${request.id}">Confirm Completion</button>
+                </div>
+              `;
+            } else if (request.status === 'completed' && !request.has_rating) {
+              actionsHTML = `
+                <div class="request-buttons">
+                  <button class="rate-button" data-request-id="${request.id}" data-fairy-name="${request.fairy_name || 'the Flexi Fairy'}">Rate Fairy</button>
+                </div>
+              `;
+            }
+            
+            return `
+              <div class="request-card ${statusClass}">
+                <div class="request-header">
+                  <h3>${request.location}</h3>
+                  <span class="request-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="request-details">
+                  <div class="detail-item">
+                    <div class="label">Amount</div>
+                    <div class="value">$${request.amount.toFixed(2)}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="label">Date Requested</div>
+                    <div class="value">${formattedDate}</div>
+                  </div>
+                  ${request.fairy_name ? `
+                    <div class="detail-item">
+                      <div class="label">Fairy</div>
+                      <div class="value">${request.fairy_name}</div>
+                    </div>
+                  ` : ''}
+                </div>
+                ${request.description ? `
+                  <div class="detail-item">
+                    <div class="label">Description</div>
+                    <div class="value">${request.description}</div>
+                  </div>
+                ` : ''}
+                ${actionsHTML}
+              </div>
+            `;
+          }).join('');
+          
+          requestsContainer.innerHTML = requestsHTML;
+          
+          // Add event listeners to action buttons
+          document.querySelectorAll('.confirm-button').forEach(button => {
+            button.addEventListener('click', async () => {
+              const requestId = button.getAttribute('data-request-id');
+              await confirmRequest(requestId);
+            });
+          });
+          
+          document.querySelectorAll('.rate-button').forEach(button => {
+            button.addEventListener('click', () => {
+              currentRequestId = button.getAttribute('data-request-id');
+              const fairyName = button.getAttribute('data-fairy-name');
+              document.getElementById('fairy-name').textContent = fairyName;
+              document.getElementById('rating-modal').style.display = 'block';
+            });
+          });
+        } catch (error) {
+          console.error('Error loading requests:', error);
+          document.getElementById('requests-container').innerHTML = 
+            '<div class="empty-state">Failed to load your requests. Please try again later.</div>';
+        }
+      }
+      
+      // Function to confirm request completion
+      async function confirmRequest(requestId) {
+        try {
+          await fetchAPI('/api/fairy/request/confirm', {
+            method: 'POST',
+            body: JSON.stringify({
+              request_id: requestId
+            })
+          });
+          
+          showMessage('Request confirmed successfully!');
+          loadUserRequests();
+        } catch (error) {
+          console.error('Error confirming request:', error);
+          showMessage('Failed to confirm request: ' + error.message, 'error');
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

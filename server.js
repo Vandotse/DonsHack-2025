@@ -7,6 +7,10 @@ const fs = require('fs');
 // Import our modules
 const auth = require('./auth');
 const api = require('./api');
+const fairyRouter = require('./api/fairy');
+
+// Set up global JWT secret
+process.env.JWT_SECRET = 'flexibudget-default-secret-key';
 
 // Set environment variables
 process.env.NODE_ENV = 'production';
@@ -21,6 +25,10 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'web')));
 
 // API Routes
+// Use fairy API router
+app.use('/api/fairy', fairyRouter);
+
+// Legacy API routes
 // Public routes (no authentication required)
 app.post('/api/login', api.handleLogin);
 app.post('/api/register', api.handleRegister);

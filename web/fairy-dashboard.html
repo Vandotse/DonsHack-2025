@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fairy Dashboard - FlexiBudget</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .logo img {
+      max-width: 50px;
+      margin-right: 10px;
+    }
+    
+    .logo h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    
+    .fairy-status {
+      margin-bottom: 2rem;
+      border-radius: 10px;
+      padding: 1.5rem;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .status-header h3 {
+      margin: 0;
+    }
+    
+    .status-toggle {
+      display: flex;
+      align-items: center;
+    }
+    
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    
+    .status-badge.active {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .status-badge.inactive {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .stats-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .stat-box {
+      flex: 1;
+      min-width: 150px;
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+    
+    .stat-box .label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-box .value {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .requests-section {
+      margin-top: 2rem;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+    }
+    
+    .tab {
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+    }
+    
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .request-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #ddd;
+    }
+    
+    .request-card.pending {
+      border-left-color: #ffc107;
+    }
+    
+    .request-card.accepted {
+      border-left-color: #17a2b8;
+    }
+    
+    .request-card.completed {
+      border-left-color: #28a745;
+    }
+    
+    .request-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .request-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    
+    .request-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .request-status.pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .request-status.accepted {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+    
+    .request-status.completed {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .request-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .detail-item {
+      margin-bottom: 0.5rem;
+    }
+    
+    .detail-item .label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 0.2rem;
+    }
+    
+    .detail-item .value {
+      font-weight: 500;
+    }
+    
+    .request-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .request-buttons button {
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .accept-button {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .accept-button:hover {
+      background-color: var(--secondary-color);
+      color: #000;
+    }
+    
+    .confirm-button {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .confirm-button:hover {
+      background-color: #218838;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-light);
+      font-style: italic;
+    }
+    
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-color);
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    
+    .requester-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .rating {
+      display: flex;
+      gap: 2px;
+      margin-top: 0.5rem;
+    }
+    
+    .rating .star {
+      color: #ffc107;
+      font-size: 0.9rem;
+    }
+    
+    .rating .star.empty {
+      color: #ddd;
+    }
+    
+    .rating-value {
+      margin-left: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    @media (max-width: 768px) {
+      .request-details {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="logo">
+        <img src="static/img/usfca-logo.png" alt="USFCA Logo">
+        <h1>FlexiBudget</h1>
+      </div>
+      <ul class="menu">
+        <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li><a href="transactions.html"><i class="fas fa-history"></i> Transactions</a></li>
+        <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        <li><a href="fairy-request.html"><i class="fas fa-magic"></i> Request Help</a></li>
+        <li class="active"><a href="fairy-dashboard.html"><i class="fas fa-hands-helping"></i> Fairy Dashboard</a></li>
+        <li><a href="fairy-leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <p>Version 0.1.0</p>
+      </div>
+    </nav>
+
+    <main class="content">
+      <header>
+        <div class="user-info">
+          <img src="static/img/avatar.svg" alt="User Avatar" class="avatar">
+          <div>
+            <h2>Hello, <span id="username">Student</span></h2>
+            <p>Manage your Flexi Fairy requests</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="fairy-status card">
+        <div class="status-header">
+          <h3>Your Fairy Status</h3>
+          <div class="status-toggle">
+            <span class="status-badge" id="status-badge">Loading...</span>
+            <a href="settings.html" style="margin-left: 1rem; font-size: 0.9rem;">Edit Settings</a>
+          </div>
+        </div>
+        
+        <div id="fairy-inactive-message" style="display: none;">
+          <p>You are not currently active as a Flexi Fairy. <a href="settings.html">Activate your status</a> to help others with their meals.</p>
+        </div>
+        
+        <div id="fairy-stats" style="display: none;">
+          <div class="stats-container">
+            <div class="stat-box">
+              <div class="label">Total Amount Helped</div>
+              <div class="value">$<span id="total-amount">0.00</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Requests Fulfilled</div>
+              <div class="value"><span id="requests-count">0</span></div>
+            </div>
+            <div class="stat-box">
+              <div class="label">Average Rating</div>
+              <div class="value">
+                <span id="rating">0.0</span>/5
+                <div class="rating" id="rating-stars"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="requests-section card">
+        <div class="tabs">
+          <div class="tab active" data-tab="pending">Pending Requests</div>
+          <div class="tab" data-tab="accepted">Your Accepted Requests</div>
+        </div>
+        
+        <div class="tab-content active" id="pending-tab">
+          <div id="pending-requests-container">
+            <div class="empty-state">Loading pending requests...</div>
+          </div>
+        </div>
+        
+        <div class="tab-content" id="accepted-tab">
+          <div id="accepted-requests-container">
+            <div class="empty-state">Loading your accepted requests...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/main.js"></script>
+  <script src="static/js/sidebar.js"></script>
+  <script src="static/js/fairy.js"></script>
+  <script src="static/js/notifications.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load fairy status
+      await loadFairyStatus();
+      
+      // Load requests
+      loadPendingRequests();
+      loadAcceptedRequests();
+      
+      // Tab switching
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          tab.classList.add('active');
+          
+          // Show corresponding content
+          const tabId = tab.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+      });
+      
+      // Function to load fairy status
+      async function loadFairyStatus() {
+        try {
+          const response = await fetchAPI('/api/fairy/status');
+          
+          // Update status badge
+          const statusBadge = document.getElementById('status-badge');
+          if (response.is_active) {
+            statusBadge.textContent = 'Active';
+            statusBadge.classList.add('active');
+            statusBadge.classList.remove('inactive');
+            document.getElementById('fairy-stats').style.display = 'block';
+            document.getElementById('fairy-inactive-message').style.display = 'none';
+          } else {
+            statusBadge.textContent = 'Inactive';
+            statusBadge.classList.add('inactive');
+            statusBadge.classList.remove('active');
+            document.getElementById('fairy-stats').style.display = 'none';
+            document.getElementById('fairy-inactive-message').style.display = 'block';
+          }
+          
+          // Update stats
+          document.getElementById('total-amount').textContent = response.total_helped_amount.toFixed(2);
+          document.getElementById('requests-count').textContent = response.total_requests_fulfilled;
+          document.getElementById('rating').textContent = response.rating_average.toFixed(1);
+          
+          // Update rating stars
+          const ratingStars = document.getElementById('rating-stars');
+          ratingStars.innerHTML = '';
+          
+          const rating = Math.round(response.rating_average * 2) / 2; // Round to nearest 0.5
+          for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+              ratingStars.innerHTML += '<i class="fas fa-star star"></i>';
+            } else if (i - 0.5 === rating) {
+              ratingStars.innerHTML += '<i class="fas fa-star-half-alt star"></i>';
+            } else {
+              ratingStars.innerHTML += '<i class="far fa-star star empty"></i>';
+            }
+          }
+          
+          return response.is_active;
+        } catch (error) {
+          console.error('Error loading fairy status:', error);
+          showMessage('Failed to load fairy status', 'error');
+          return false;
+        }
+      }
+      
+      // Function to load pending requests
+      async function loadPendingRequests() {
+        try {
+          const response = await fetchAPI('/api/fairy/requests/pending');
+          const container = document.getElementById('pending-requests-container');
+          
+          if (response.requests.length === 0) {
+            container.innerHTML = '<div class="empty-state">There are no pending requests at this time.</div>';
+            return;
+          }
+          
+          // Sort by newest first
+          const sortedRequests = response.requests.sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          
+          const isActive = document.getElementById('status-badge').textContent === 'Active';
+          
+          // Generate HTML for requests
+          const requestsHTML = sortedRequests.map(request => {
+            const formattedDate = new Date(request.created_at).toLocaleDateString(undefined, {
+              weekday: 'short',
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // Get initials for avatar
+            const nameParts = request.requestor_name.split(' ');
+            const initials = nameParts.map(part => part[0]).join('').toUpperCase();
+            
+            return `
+              <div class="request-card pending">
+                <div class="request-header">
+                  <h3>${request.location}</h3>
+                  <span class="request-status pending">Pending</span>
+                </div>
+                
+                <div class="requester-info">
+                  <div class="avatar">${initials}</div>
+                  <div>
+                    <div style="font-weight: 500;">${request.requestor_name}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-light);">${request.requestor_student_id}</div>
+                  </div>
+                </div>
+                
+                <div class="request-details">
+                  <div class="detail-item">
+                    <div class="label">Amount</div>
+                    <div class="value">$${request.amount.toFixed(2)}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="label">Date Requested</div>
+                    <div class="value">${formattedDate}</div>
+                  </div>
+                </div>
+                
+                ${request.description ? `
+                  <div class="detail-item">
+                    <div class="label">Description</div>
+                    <div class="value">${request.description}</div>
+                  </div>
+                ` : ''}
+                
+                <div class="request-buttons">
+                  <button class="accept-button" data-request-id="${request.id}" ${!isActive ? 'disabled' : ''}>
+                    Accept Request
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+          container.innerHTML = requestsHTML;
+          
+          // Add event listeners to accept buttons
+          document.querySelectorAll('.accept-button').forEach(button => {
+            button.addEventListener('click', async () => {
+              const requestId = button.getAttribute('data-request-id');
+              await acceptRequest(requestId);
+            });
+          });
+        } catch (error) {
+          console.error('Error loading pending requests:', error);
+          document.getElementById('pending-requests-container').innerHTML = 
+            '<div class="empty-state">Failed to load pending requests. Please try again later.</div>';
+        }
+      }
+      
+      // Function to load accepted requests
+      async function loadAcceptedRequests() {
+        try {
+          const response = await fetchAPI('/api/fairy/requests/accepted');
+          const container = document.getElementById('accepted-requests-container');
+          
+          if (response.requests.length === 0) {
+            container.innerHTML = '<div class="empty-state">You haven\'t accepted any requests yet.</div>';
+            return;
+          }
+          
+          // Sort by newest first
+          const sortedRequests = response.requests.sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          
+          // Generate HTML for requests
+          const requestsHTML = sortedRequests.map(request => {
+            const statusClass = request.status.toLowerCase();
+            const formattedDate = new Date(request.created_at).toLocaleDateString(undefined, {
+              weekday: 'short',
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // Get initials for avatar
+            const nameParts = request.requestor_name.split(' ');
+            const initials = nameParts.map(part => part[0]).join('').toUpperCase();
+            
+            let statusText = request.status.charAt(0).toUpperCase() + request.status.slice(1);
+            let actionsHTML = '';
+            
+            // Add appropriate action buttons based on request status
+            if (request.status === 'accepted' && !request.fairy_confirmed) {
+              actionsHTML = `
+                <div class="request-buttons">
+                  <button class="confirm-button" data-request-id="${request.id}">Confirm Completion</button>
+                </div>
+              `;
+            }
+            
+            return `
+              <div class="request-card ${statusClass}">
+                <div class="request-header">
+                  <h3>${request.location}</h3>
+                  <span class="request-status ${statusClass}">${statusText}</span>
+                </div>
+                
+                <div class="requester-info">
+                  <div class="avatar">${initials}</div>
+                  <div>
+                    <div style="font-weight: 500;">${request.requestor_name}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-light);">${request.requestor_student_id}</div>
+                  </div>
+                </div>
+                
+                <div class="request-details">
+                  <div class="detail-item">
+                    <div class="label">Amount</div>
+                    <div class="value">$${request.amount.toFixed(2)}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="label">Date Requested</div>
+                    <div class="value">${formattedDate}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="label">Status</div>
+                    <div class="value">
+                      ${statusText}
+                      ${request.requestor_confirmed ? '<span style="margin-left: 0.5rem; font-size: 0.8rem; color: var(--success-color);"><i class="fas fa-check-circle"></i> Requestor confirmed</span>' : ''}
+                      ${request.fairy_confirmed ? '<span style="margin-left: 0.5rem; font-size: 0.8rem; color: var(--success-color);"><i class="fas fa-check-circle"></i> You confirmed</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                ${request.description ? `
+                  <div class="detail-item">
+                    <div class="label">Description</div>
+                    <div class="value">${request.description}</div>
+                  </div>
+                ` : ''}
+                
+                ${actionsHTML}
+              </div>
+            `;
+          }).join('');
+          
+          container.innerHTML = requestsHTML;
+          
+          // Add event listeners to confirm buttons
+          document.querySelectorAll('.confirm-button').forEach(button => {
+            button.addEventListener('click', async () => {
+              const requestId = button.getAttribute('data-request-id');
+              await confirmRequest(requestId);
+            });
+          });
+        } catch (error) {
+          console.error('Error loading accepted requests:', error);
+          document.getElementById('accepted-requests-container').innerHTML = 
+            '<div class="empty-state">Failed to load your accepted requests. Please try again later.</div>';
+        }
+      }
+      
+      // Function to accept a request
+      async function acceptRequest(requestId) {
+        try {
+          await fetchAPI('/api/fairy/request/accept', {
+            method: 'POST',
+            body: JSON.stringify({
+              request_id: requestId
+            })
+          });
+          
+          showMessage('Request accepted successfully!');
+          
+          // Reload requests
+          loadPendingRequests();
+          loadAcceptedRequests();
+        } catch (error) {
+          console.error('Error accepting request:', error);
+          showMessage('Failed to accept request: ' + error.message, 'error');
+        }
+      }
+      
+      // Function to confirm request completion
+      async function confirmRequest(requestId) {
+        try {
+          await fetchAPI('/api/fairy/request/confirm', {
+            method: 'POST',
+            body: JSON.stringify({
+              request_id: requestId
+            })
+          });
+          
+          showMessage('Request confirmed successfully!');
+          
+          // Reload requests
+          loadAcceptedRequests();
+          
+          // Reload fairy status to update stats
+          loadFairyStatus();
+        } catch (error) {
+          console.error('Error confirming request:', error);
+          showMessage('Failed to confirm request: ' + error.message, 'error');
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

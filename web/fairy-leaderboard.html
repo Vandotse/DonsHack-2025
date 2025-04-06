@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flexi Fairy Leaderboard - FlexiBudget</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .logo img {
+      max-width: 50px;
+      margin-right: 10px;
+    }
+    
+    .logo h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    
+    .leaderboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    
+    .leaderboard-header h2 {
+      margin: 0;
+    }
+    
+    .filter-dropdown {
+      position: relative;
+    }
+    
+    .filter-button {
+      padding: 0.5rem 1rem;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .filter-button i {
+      font-size: 0.8rem;
+    }
+    
+    .filter-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      min-width: 150px;
+      display: none;
+    }
+    
+    .filter-menu.active {
+      display: block;
+    }
+    
+    .filter-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .filter-menu li {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .filter-menu li:last-child {
+      border-bottom: none;
+    }
+    
+    .filter-menu li:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .leaderboard {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    
+    .leaderboard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .leaderboard th {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .leaderboard td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .leaderboard tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .leaderboard tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .fairy-rank {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .rank-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #f0f0f0;
+      font-weight: 600;
+    }
+    
+    .rank-1 {
+      background-color: #ffd700;
+      color: #856404;
+    }
+    
+    .rank-2 {
+      background-color: #c0c0c0;
+      color: #464646;
+    }
+    
+    .rank-3 {
+      background-color: #cd7f32;
+      color: #7c4e1e;
+    }
+    
+    .fairy-info {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    
+    .fairy-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f0f0f0;
+      color: var(--text-color);
+      font-weight: 600;
+    }
+    
+    .fairy-name {
+      font-weight: 500;
+    }
+    
+    .fairy-name .student-id {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 0.2rem;
+    }
+    
+    .rating {
+      display: flex;
+      gap: 2px;
+    }
+    
+    .rating .star {
+      color: #ffc107;
+      font-size: 0.9rem;
+    }
+    
+    .rating .star.empty {
+      color: #ddd;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-light);
+      font-style: italic;
+    }
+    
+    .help-section {
+      margin-top: 2rem;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .help-section h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+    
+    .help-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .step-card {
+      background-color: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .step-number {
+      background-color: var(--primary-color);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .step-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: var(--primary-color);
+    }
+    
+    .step-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .step-description {
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      .leaderboard th:nth-child(3),
+      .leaderboard td:nth-child(3) {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .leaderboard th:nth-child(4),
+      .leaderboard td:nth-child(4) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="logo">
+        <img src="static/img/usfca-logo.png" alt="USFCA Logo">
+        <h1>FlexiBudget</h1>
+      </div>
+      <ul class="menu">
+        <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li><a href="transactions.html"><i class="fas fa-history"></i> Transactions</a></li>
+        <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        <li><a href="fairy-request.html"><i class="fas fa-magic"></i> Request Help</a></li>
+        <li><a href="fairy-dashboard.html"><i class="fas fa-hands-helping"></i> Fairy Dashboard</a></li>
+        <li class="active"><a href="fairy-leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <p>Version 0.1.0</p>
+      </div>
+    </nav>
+
+    <main class="content">
+      <header>
+        <div class="user-info">
+          <img src="static/img/avatar.svg" alt="User Avatar" class="avatar">
+          <div>
+            <h2>Flexi Fairy Leaderboard</h2>
+            <p>Recognizing our generous community heroes</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="leaderboard-container card">
+        <div class="leaderboard-header">
+          <h3>Top Flexi Fairies</h3>
+          <div class="filter-dropdown">
+            <button class="filter-button" id="filter-toggle">
+              <span id="current-filter">All Time</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="filter-menu" id="filter-menu">
+              <ul>
+                <li data-value="week">This Week</li>
+                <li data-value="month">This Month</li>
+                <li data-value="semester">This Semester</li>
+                <li data-value="all">All Time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="leaderboard">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Fairy</th>
+                <th>Helped Amount</th>
+                <th>Requests Fulfilled</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <tr>
+                <td colspan="5" class="empty-state">Loading leaderboard data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="help-section">
+        <h3>How to Become a Flexi Fairy</h3>
+        <p>Join our community of generous students helping others with their Flexi dollars.</p>
+        
+        <div class="help-steps">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-icon"><i class="fas fa-cog"></i></div>
+            <div class="step-title">Activate Your Status</div>
+            <div class="step-description">Go to Settings and enable your Flexi Fairy status to start helping others.</div>
+          </div>
+          
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-icon"><i class="fas fa-hands-helping"></i></div>
+            <div class="step-title">Accept Requests</div>
+            <div class="step-description">Visit the Fairy Dashboard to view and accept requests from students in need.</div>
+          </div>
+          
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-icon"><i class="fas fa-utensils"></i></div>
+            <div class="step-title">Help with a Meal</div>
+            <div class="step-description">Meet the student at the requested location and use your Flexi to pay for their meal.</div>
+          </div>
+          
+          <div class="step-card">
+            <div class="step-number">4</div>
+            <div class="step-icon"><i class="fas fa-trophy"></i></div>
+            <div class="step-title">Earn Recognition</div>
+            <div class="step-description">Get rated by students you've helped and climb the leaderboard to become a top Flexi Fairy!</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="static/js/main.js"></script>
+  <script src="static/js/sidebar.js"></script>
+  <script src="static/js/fairy.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set up filter dropdown toggle
+      const filterToggle = document.getElementById('filter-toggle');
+      const filterMenu = document.getElementById('filter-menu');
+      
+      filterToggle.addEventListener('click', () => {
+        filterMenu.classList.toggle('active');
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (event) => {
+        if (!filterToggle.contains(event.target) && !filterMenu.contains(event.target)) {
+          filterMenu.classList.remove('active');
+        }
+      });
+      
+      // Handle filter selection
+      const filterOptions = document.querySelectorAll('#filter-menu li');
+      filterOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          const filterValue = option.getAttribute('data-value');
+          const filterText = option.textContent;
+          
+          document.getElementById('current-filter').textContent = filterText;
+          filterMenu.classList.remove('active');
+          
+          // Load leaderboard with selected filter
+          loadLeaderboard(filterValue);
+        });
+      });
+      
+      // Load initial leaderboard data
+      loadLeaderboard('all');
+      
+      // Function to load leaderboard data
+      async function loadLeaderboard(timeFilter) {
+        try {
+          const response = await fetchAPI(`/api/fairy/leaderboard?timeframe=${timeFilter}`);
+          const leaderboardBody = document.getElementById('leaderboard-body');
+          
+          if (response.fairies.length === 0) {
+            leaderboardBody.innerHTML = `
+              <tr>
+                <td colspan="5" class="empty-state">No data available for this time period.</td>
+              </tr>
+            `;
+            return;
+          }
+          
+          // Generate rows for each fairy
+          const rowsHTML = response.fairies.map((fairy, index) => {
+            const rank = index + 1;
+            const rankClass = rank <= 3 ? `rank-${rank}` : '';
+            
+            // Get initials for avatar
+            const nameParts = fairy.name.split(' ');
+            const initials = nameParts.map(part => part[0]).join('').toUpperCase();
+            
+            // Generate rating stars
+            let starsHTML = '';
+            const rating = Math.round(fairy.rating * 2) / 2; // Round to nearest 0.5
+            for (let i = 1; i <= 5; i++) {
+              if (i <= rating) {
+                starsHTML += '<i class="fas fa-star star"></i>';
+              } else if (i - 0.5 === rating) {
+                starsHTML += '<i class="fas fa-star-half-alt star"></i>';
+              } else {
+                starsHTML += '<i class="far fa-star star empty"></i>';
+              }
+            }
+            
+            return `
+              <tr>
+                <td>
+                  <div class="fairy-rank">
+                    <div class="rank-number ${rankClass}">${rank}</div>
+                  </div>
+                </td>
+                <td>
+                  <div class="fairy-info">
+                    <div class="fairy-avatar">${initials}</div>
+                    <div class="fairy-name">
+                      ${fairy.name}
+                      <div class="student-id">${fairy.student_id}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>$${fairy.amount_helped.toFixed(2)}</td>
+                <td>${fairy.requests_fulfilled}</td>
+                <td>
+                  <div class="rating">
+                    ${starsHTML}
+                    <span class="rating-value">(${fairy.rating.toFixed(1)})</span>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+          
+          leaderboardBody.innerHTML = rowsHTML;
+        } catch (error) {
+          console.error('Error loading leaderboard:', error);
+          document.getElementById('leaderboard-body').innerHTML = `
+            <tr>
+              <td colspan="5" class="empty-state">Failed to load leaderboard data. Please try again later.</td>
+            </tr>
+          `;
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

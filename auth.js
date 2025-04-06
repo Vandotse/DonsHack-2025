@@ -115,7 +115,16 @@ async function login(studentID, password) {
       return null;
     }
     
-    const { token, expiresAt } = generateToken(user);
+    // Generate token with consistent JWT_SECRET
+    const token = jwt.sign({
+      user_id: user.id,
+      student_id: user.student_id,
+      name: user.name,
+      email: user.email
+    }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });
+    
+    // Calculate expiration date
+    const expiresAt = Math.floor(Date.now() / 1000) + (24 * 60 * 60);
     
     return {
       token,

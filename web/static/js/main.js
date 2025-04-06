@@ -3,6 +3,8 @@ async function fetchAPI(endpoint, options = {}) {
   // Add auth token to headers if available
   const token = localStorage.getItem('authToken');
   
+  console.log('Auth token from localStorage:', token ? 'Present (length: ' + token.length + ')' : 'Not found');
+  
   // If token is required and not available, redirect to login
   if (!token && !endpoint.includes('/login') && !endpoint.includes('/register')) {
     console.error('No auth token available for protected endpoint:', endpoint);
@@ -17,29 +19,40 @@ async function fetchAPI(endpoint, options = {}) {
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('Authorization header set with token');
   }
   
   try {
+    console.log(`Fetching ${endpoint}...`);
     const response = await fetch(endpoint, {
       ...options,
       headers
     });
     
+    console.log(`${endpoint} response status:`, response.status);
+    
     // Handle 401 Unauthorized before parsing JSON
     if (response.status === 401) {
-      // Clear invalid auth data and redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('studentId');
+      console.error('Authentication failed (401) for endpoint:', endpoint);
       
-      window.location.href = 'login.html?error=session_expired';
+      // Only clear auth data and redirect if we're not already on the login page
+      if (!window.location.href.includes('login.html')) {
+        // Clear invalid auth data and redirect to login
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('studentId');
+        
+        window.location.href = 'login.html?error=session_expired';
+      }
+      
       throw new Error('Authentication failed');
     }
     
     const data = await response.json();
     
     if (!response.ok) {
+      console.error(`API error (${endpoint}):`, data.error);
       throw new Error(data.error || 'API request failed');
     }
     

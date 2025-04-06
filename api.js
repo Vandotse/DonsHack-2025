@@ -237,6 +237,297 @@ async function updateBudget(req, res) {
   }
 }
 
+// Flexi Fairy routes
+async function getFairyStatus(req, res) {
+  try {
+    const status = await db.getFairyStatus(req.user.id);
+    
+    if (!status) {
+      return res.json({
+        is_active: false,
+        total_helped_amount: 0,
+        total_requests_fulfilled: 0,
+        rating_average: 0,
+        rating_count: 0
+      });
+    }
+    
+    res.json({
+      id: status.id,
+      is_active: Boolean(status.is_active),
+      max_transaction_amount: status.max_transaction_amount,
+      total_helped_amount: status.total_helped_amount,
+      total_requests_fulfilled: status.total_requests_fulfilled,
+      rating_average: status.rating_average,
+      rating_count: status.rating_count
+    });
+  } catch (err) {
+    console.error('Error getting fairy status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function toggleFairyStatus(req, res) {
+  try {
+    const { is_active, max_transaction_amount } = req.body;
+    
+    if (is_active === undefined) {
+      return res.status(400).json({ error: 'is_active field is required' });
+    }
+    
+    await db.toggleFairyStatus(req.user.id, is_active, max_transaction_amount);
+    
+    // Get updated status
+    const status = await db.getFairyStatus(req.user.id);
+    
+    res.json({
+      id: status.id,
+      is_active: Boolean(status.is_active),
+      max_transaction_amount: status.max_transaction_amount,
+      total_helped_amount: status.total_helped_amount,
+      total_requests_fulfilled: status.total_requests_fulfilled,
+      rating_average: status.rating_average,
+      rating_count: status.rating_count
+    });
+  } catch (err) {
+    console.error('Error toggling fairy status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getActiveFairies(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    const sortBy = req.query.sort_by || 'rating'; // rating, amount, count
+    
+    const result = await db.getActiveFairies(limit, offset, sortBy);
+    
+    // Format the fairies data
+    const formattedFairies = result.fairies.map(fairy => ({
+      id: fairy.id,
+      user_id: fairy.user_id,
+      name: fairy.name,
+      student_id: fairy.student_id,
+      is_active: Boolean(fairy.is_active),
+      max_transaction_amount: fairy.max_transaction_amount,
+      total_helped_amount: fairy.total_helped_amount,
+      total_requests_fulfilled: fairy.total_requests_fulfilled,
+      rating_average: fairy.rating_average,
+      rating_count: fairy.rating_count
+    }));
+    
+    res.json({
+      fairies: formattedFairies,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset
+    });
+  } catch (err) {
+    console.error('Error getting active fairies:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function createFairyRequest(req, res) {
+  try {
+    const { location, amount, description } = req.body;
+    
+    if (!location || !amount) {
+      return res.status(400).json({ error: 'Location and amount are required' });
+    }
+    
+    // Validate location
+    const validLocations = [
+      'The Market Cafe', 
+      'Undercaf', 
+      'Law Cafe', 
+      'Lone Mountain Cafe'
+    ];
+    
+    if (!validLocations.includes(location)) {
+      return res.status(400).json({ 
+        error: 'Invalid location. Valid locations are: ' + validLocations.join(', ')
+      });
+    }
+    
+    // Validate amount
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+    
+    const result = await db.createFairyRequest(req.user.id, location, amountNum, description);
+    
+    // Get the created request
+    const request = await db.getFairyRequest(result.lastID);
+    
+    res.json(request);
+  } catch (err) {
+    console.error('Error creating fairy request:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getPendingFairyRequests(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const result = await db.getPendingFairyRequests(limit, offset);
+    
+    res.json({
+      requests: result.requests,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset
+    });
+  } catch (err) {
+    console.error('Error getting pending fairy requests:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getUserFairyRequests(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const result = await db.getUserFairyRequests(req.user.id, limit, offset);
+    
+    res.json({
+      requests: result.requests,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset
+    });
+  } catch (err) {
+    console.error('Error getting user fairy requests:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getFairyAcceptedRequests(req, res) {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const result = await db.getFairyAcceptedRequests(req.user.id, limit, offset);
+    
+    res.json({
+      requests: result.requests,
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset
+    });
+  } catch (err) {
+    console.error('Error getting fairy accepted requests:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function acceptFairyRequest(req, res) {
+  try {
+    const { request_id } = req.body;
+    
+    if (!request_id) {
+      return res.status(400).json({ error: 'request_id is required' });
+    }
+    
+    // Check if user is a fairy
+    const fairyStatus = await db.getFairyStatus(req.user.id);
+    
+    if (!fairyStatus || !fairyStatus.is_active) {
+      return res.status(403).json({ error: 'Only active fairies can accept requests' });
+    }
+    
+    const request = await db.acceptFairyRequest(request_id, req.user.id);
+    
+    res.json(request);
+  } catch (err) {
+    console.error('Error accepting fairy request:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function confirmFairyRequest(req, res) {
+  try {
+    const { request_id } = req.body;
+    
+    if (!request_id) {
+      return res.status(400).json({ error: 'request_id is required' });
+    }
+    
+    // Get the request to check roles
+    const request = await db.getFairyRequest(request_id);
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    // Determine if the user is the requestor or the fairy
+    const isRequestor = request.requestor_id === req.user.id;
+    const isFairy = request.fairy_id === req.user.id;
+    
+    if (!isRequestor && !isFairy) {
+      return res.status(403).json({ error: 'Only the requestor or the fairy can confirm this request' });
+    }
+    
+    const updatedRequest = await db.confirmFairyRequest(request_id, req.user.id, isRequestor);
+    
+    res.json(updatedRequest);
+  } catch (err) {
+    console.error('Error confirming fairy request:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+}
+
+async function rateFairy(req, res) {
+  try {
+    const { request_id, rating, comment } = req.body;
+    
+    if (!request_id || !rating) {
+      return res.status(400).json({ error: 'request_id and rating are required' });
+    }
+    
+    // Validate rating
+    const ratingNum = parseInt(rating);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+    
+    // Get the request to check roles
+    const request = await db.getFairyRequest(request_id);
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    // Only the requestor can rate the fairy
+    if (request.requestor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Only the requestor can rate the fairy' });
+    }
+    
+    // Ensure the request is completed
+    if (request.status !== 'completed') {
+      return res.status(400).json({ error: 'Only completed requests can be rated' });
+    }
+    
+    const ratingResult = await db.addFairyRating(
+      request_id, 
+      req.user.id, 
+      request.fairy_id, 
+      ratingNum, 
+      comment
+    );
+    
+    res.json(ratingResult);
+  } catch (err) {
+    console.error('Error rating fairy:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   // Auth routes
   handleLogin,
@@ -253,5 +544,17 @@ module.exports = {
   
   // Budget routes
   getBudget,
-  updateBudget
+  updateBudget,
+  
+  // Flexi Fairy endpoints
+  getFairyStatus,
+  toggleFairyStatus,
+  getActiveFairies,
+  createFairyRequest,
+  getPendingFairyRequests,
+  getUserFairyRequests,
+  getFairyAcceptedRequests,
+  acceptFairyRequest,
+  confirmFairyRequest,
+  rateFairy
 }; 
