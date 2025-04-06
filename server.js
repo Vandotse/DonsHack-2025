@@ -1,65 +1,69 @@
-const http = require('http');
-const fs = require('fs');
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 
+// Import our modules
+const auth = require('./auth');
+const api = require('./api');
+
+// Set environment variables
+process.env.NODE_ENV = 'production';
 const PORT = process.env.PORT || 3001;
-const WEB_DIR = path.join(__dirname, 'web');
 
-const MIME_TYPES = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'text/javascript',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon'
-};
+// Create Express app
+const app = express();
 
-const server = http.createServer((req, res) => {
-  console.log(`${req.method} ${req.url}`);
-  
-  let url = req.url;
-  
-  if (url === '/') {
-    url = '/login.html';
-  }
-  
-  const filePath = path.join(WEB_DIR, url);
-  
-  const extname = path.extname(filePath);
-  
-  const contentType = MIME_TYPES[extname] || 'application/octet-stream';
-  
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        console.error(`File not found: ${filePath}`);
-        
-        if (url !== '/404.html') {
-          res.writeHead(302, {
-            'Location': '/login.html'
-          });
-          res.end();
-          return;
-        }
-        
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404 Not Found</h1>');
-      } else {
-        console.error(`Server error: ${err.code}`);
-        res.writeHead(500, { 'Content-Type': 'text/html' });
-        res.end('<h1>500 Internal Server Error</h1>');
-      }
-    } else {
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
-    }
-  });
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'web')));
+
+// API Routes
+// Public routes (no authentication required)
+app.post('/api/login', api.handleLogin);
+app.post('/api/register', api.handleRegister);
+app.post('/api/logout', api.handleLogout);
+
+// Protected routes (authentication required)
+// User routes
+app.get('/api/users/me', auth.authMiddleware, api.getCurrentUser);
+app.get('/api/users/me/balance', auth.authMiddleware, api.getUserBalance);
+
+// Transaction routes
+app.get('/api/transactions', auth.authMiddleware, api.getTransactions);
+app.post('/api/transactions/new', auth.authMiddleware, api.createTransaction);
+
+// Budget routes
+app.get('/api/budget', auth.authMiddleware, api.getBudget);
+app.post('/api/budget/update', auth.authMiddleware, api.updateBudget);
+
+// Route for root path - serve login page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'web', 'login.html'));
 });
 
-server.listen(PORT, () => {
+// Fallback route - if not found, serve login page
+app.use((req, res) => {
+  // Try to serve the requested path first
+  const filePath = path.join(__dirname, 'web', req.path);
+  
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+    
+    // If the path isn't a file, redirect to login.html
+    res.sendFile(path.join(__dirname, 'web', 'login.html'));
+  } catch (err) {
+    // If there's an error (e.g., invalid characters in path), redirect to login
+    res.sendFile(path.join(__dirname, 'web', 'login.html'));
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
-  console.log(`Serving files from ${WEB_DIR}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
 }); 

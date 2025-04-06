@@ -108,6 +108,22 @@
       margin: 0 auto 1rem;
       display: block;
     }
+
+    .error-message {
+      color: #dc3545;
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      display: none;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: rgba(220, 53, 69, 0.1);
+      border-left: 3px solid #dc3545;
+    }
+
+    .register-form {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -118,6 +134,7 @@
       <p>Track and manage your campus meal plan</p>
     </div>
     
+    <!-- Login Form -->
     <form class="login-form" id="login-form">
       <div class="form-group">
         <label for="student-id">Student ID</label>
@@ -136,26 +153,238 @@
       
       <button type="submit" class="login-button">Log In</button>
       
+      <div class="error-message" id="login-error"></div>
+      
       <div class="login-options">
         <a href="#">Forgot password?</a>
-        <a href="#">Create account</a>
+        <a href="#" id="show-register">Create account</a>
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center; color: var(--text-light); font-size: 0.9rem; border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <p><strong>New to FlexiBudget?</strong> You must create an account before logging in.</p>
+        <p>Click on <a href="#" id="show-register-2" style="color: var(--primary-color); font-weight: bold;">Create account</a> to register.</p>
+      </div>
+    </form>
+
+    <!-- Registration Form -->
+    <form class="register-form" id="register-form">
+      <div class="form-group">
+        <label for="reg-student-id">Student ID</label>
+        <input type="text" id="reg-student-id" placeholder="Enter your student ID" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="reg-name">Full Name</label>
+        <input type="text" id="reg-name" placeholder="Enter your full name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="Enter your email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="reg-password">Password</label>
+        <input type="password" id="reg-password" placeholder="Create a password" required>
+      </div>
+      
+      <button type="submit" class="login-button">Register</button>
+      
+      <div class="error-message" id="register-error"></div>
+      
+      <div class="login-options">
+        <a href="#" id="show-login">Back to login</a>
       </div>
     </form>
   </div>
 
   <script>
-    document.getElementById('login-form').addEventListener('submit', function(e) {
+    // Check for URL parameters on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get('error');
+      
+      if (errorParam === 'session_expired') {
+        const errorElement = document.getElementById('login-error');
+        errorElement.textContent = 'Your session has expired. Please log in again.';
+        errorElement.style.display = 'block';
+      }
+    });
+    
+    // Toggle between login and registration forms
+    document.getElementById('show-register').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      // Clear any existing error messages
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('register-error').style.display = 'none';
+    });
+    
+    // Second registration link (in the info box)
+    document.getElementById('show-register-2').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      // Clear any existing error messages
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('register-error').style.display = 'none';
+    });
+    
+    document.getElementById('show-login').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+      // Clear any existing error messages
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('register-error').style.display = 'none';
+    });
+    
+    // Handle login form submission
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const studentId = document.getElementById('student-id').value;
       const password = document.getElementById('password').value;
+      const errorElement = document.getElementById('login-error');
       
-      if (studentId && password) {
-        sessionStorage.setItem('username', studentId);
+      // Clear any previous error
+      errorElement.style.display = 'none';
+      
+      if (!studentId || !password) {
+        errorElement.textContent = 'Please enter both student ID and password';
+        errorElement.style.display = 'block';
+        return;
+      }
+      
+      try {
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = 'Logging in...';
+        submitButton.disabled = true;
         
+        // Call login API
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            password: password
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+        
+        // Store authentication data
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('studentId', data.user.student_id);
+        
+        // Redirect to dashboard
         window.location.href = 'index.html';
-      } else {
-        alert('Please enter both student ID and password');
+      } catch (error) {
+        errorElement.textContent = error.message;
+        errorElement.style.display = 'block';
+        
+        // Shake the error message to draw attention
+        errorElement.animate(
+          [
+            { transform: 'translateX(-5px)' },
+            { transform: 'translateX(5px)' },
+            { transform: 'translateX(-5px)' },
+            { transform: 'translateX(5px)' },
+            { transform: 'translateX(0)' }
+          ],
+          { duration: 300, iterations: 1 }
+        );
+      } finally {
+        // Reset button state
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
+    });
+    
+    // Handle registration form submission
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const studentId = document.getElementById('reg-student-id').value;
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      const errorElement = document.getElementById('register-error');
+      
+      // Clear any previous error
+      errorElement.style.display = 'none';
+      
+      if (!studentId || !name || !email || !password) {
+        errorElement.textContent = 'All fields are required';
+        errorElement.style.display = 'block';
+        return;
+      }
+      
+      try {
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = 'Registering...';
+        submitButton.disabled = true;
+        
+        // Call registration API
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            name: name,
+            email: email,
+            password: password
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Registration failed');
+        }
+        
+        // Store authentication data
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('studentId', data.user.student_id);
+        
+        // Redirect to dashboard
+        window.location.href = 'index.html';
+      } catch (error) {
+        errorElement.textContent = error.message;
+        errorElement.style.display = 'block';
+        
+        // Shake the error message to draw attention
+        errorElement.animate(
+          [
+            { transform: 'translateX(-5px)' },
+            { transform: 'translateX(5px)' },
+            { transform: 'translateX(-5px)' },
+            { transform: 'translateX(5px)' },
+            { transform: 'translateX(0)' }
+          ],
+          { duration: 300, iterations: 1 }
+        );
+      } finally {
+        // Reset button state
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
       }
     });
   </script>

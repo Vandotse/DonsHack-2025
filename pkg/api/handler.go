@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pyne/flexibudget/pkg/auth"
 	"github.com/pyne/flexibudget/pkg/models"
 )
 
@@ -17,57 +18,89 @@ func NewHandler(db *models.DB) *Handler {
 	return &Handler{db: db}
 }
 
+// GetCurrentUser returns the user information for the authenticated user
 func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID := int64(1)
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	user := struct {
+	user, err := h.db.GetUserByID(userID)
+	if err != nil || user == nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	userResponse := struct {
 		ID        int64  `json:"id"`
 		StudentID string `json:"student_id"`
 		Name      string `json:"name"`
 		Email     string `json:"email"`
 	}{
-		ID:        userID,
-		StudentID: "S12345",
-		Name:      "John Doe",
-		Email:     "john.doe@example.com",
+		ID:        user.ID,
+		StudentID: user.StudentID,
+		Name:      user.Name,
+		Email:     user.Email,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(userResponse)
 }
 
+// GetUserBalance returns the balance information for the authenticated user
 func (h *Handler) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID := int64(1)
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	balance := struct {
+	balance, err := h.db.GetUserBalance(userID)
+	if err != nil {
+		http.Error(w, "Failed to get balance", http.StatusInternalServerError)
+		return
+	}
+
+	// Calculate spent amount
+	spentAmount := balance.StartingBalance - balance.CurrentBalance
+
+	balanceResponse := struct {
 		UserID          int64   `json:"user_id"`
 		StartingBalance float64 `json:"starting_balance"`
 		CurrentBalance  float64 `json:"current_balance"`
 		SpentAmount     float64 `json:"spent_amount"`
 	}{
-		UserID:          userID,
-		StartingBalance: 1500.00,
-		CurrentBalance:  1250.00,
-		SpentAmount:     250.00,
+		UserID:          balance.UserID,
+		StartingBalance: balance.StartingBalance,
+		CurrentBalance:  balance.CurrentBalance,
+		SpentAmount:     spentAmount,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(balance)
+	json.NewEncoder(w).Encode(balanceResponse)
 }
 
+// GetTransactions returns the list of transactions for the authenticated user with pagination
 func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -79,64 +112,62 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		limit = 10 
 	}
 
-	userID := int64(1) 
+	transactions, total, err := h.db.GetUserTransactions(userID, limit, offset)
+	if err != nil {
+		http.Error(w, "Failed to get transactions", http.StatusInternalServerError)
+		return
+	}
 
-	transactions := []struct {
+	// Add icons based on transaction location (normally these would be stored in the database)
+	type TransactionWithIcon struct {
 		ID              int64     `json:"id"`
 		UserID          int64     `json:"user_id"`
 		Amount          float64   `json:"amount"`
 		Location        string    `json:"location"`
+		Description     string    `json:"description"`
 		TransactionDate time.Time `json:"transaction_date"`
 		Icon            string    `json:"icon"`
-	}{}
-
-	locations := []struct {
-		Name string
-		Icon string
-	}{
-		{"Campus Café", "fa-utensils"},
-		{"University Bookstore", "fa-book"},
-		{"Student Center", "fa-mug-hot"},
-		{"Food Truck Rally", "fa-truck"},
-		{"Late Night Grill", "fa-hamburger"},
 	}
 
-	for i := 1; i <= limit; i++ {
-		loc := locations[(i-1)%len(locations)]
-		date := time.Now().AddDate(0, 0, -(i-1)/2)
+	// Map to store location to icon mappings
+	locationIcons := map[string]string{
+		"Campus Café":         "fa-utensils",
+		"University Bookstore": "fa-book",
+		"Student Center":      "fa-mug-hot",
+		"Food Truck Rally":    "fa-truck",
+		"Late Night Grill":    "fa-hamburger",
+	}
 
-		transactions = append(transactions, struct {
-			ID              int64     `json:"id"`
-			UserID          int64     `json:"user_id"`
-			Amount          float64   `json:"amount"`
-			Location        string    `json:"location"`
-			TransactionDate time.Time `json:"transaction_date"`
-			Icon            string    `json:"icon"`
-		}{
-			ID:              int64(i),
-			UserID:          userID,
-			Amount:          10.0 + float64(i),
-			Location:        loc.Name,
-			TransactionDate: date,
-			Icon:            loc.Icon,
+	// Default icon
+	defaultIcon := "fa-credit-card"
+
+	// Create response with icons
+	txWithIcons := make([]TransactionWithIcon, 0, len(transactions))
+	for _, tx := range transactions {
+		icon, ok := locationIcons[tx.Location]
+		if !ok {
+			icon = defaultIcon
+		}
+
+		txWithIcons = append(txWithIcons, TransactionWithIcon{
+			ID:              tx.ID,
+			UserID:          tx.UserID,
+			Amount:          tx.Amount,
+			Location:        tx.Location,
+			Description:     tx.Description,
+			TransactionDate: tx.TransactionDate,
+			Icon:            icon,
 		})
 	}
 
 	response := struct {
-		Transactions []struct {
-			ID              int64     `json:"id"`
-			UserID          int64     `json:"user_id"`
-			Amount          float64   `json:"amount"`
-			Location        string    `json:"location"`
-			TransactionDate time.Time `json:"transaction_date"`
-			Icon            string    `json:"icon"`
-		} `json:"transactions"`
-		Total  int `json:"total"`
-		Limit  int `json:"limit"`
-		Offset int `json:"offset"`
+		Transactions []TransactionWithIcon `json:"transactions"`
+		Total        int                   `json:"total"`
+		Limit        int                   `json:"limit"`
+		Offset       int                   `json:"offset"`
 	}{
-		Transactions: transactions,
-		Total:        30, 
+		Transactions: txWithIcons,
+		Total:        total,
 		Limit:        limit,
 		Offset:       offset,
 	}
@@ -145,9 +176,16 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// CreateTransaction creates a new transaction for the authenticated user
 func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -172,84 +210,101 @@ func (h *Handler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transaction := struct {
-		ID              int64     `json:"id"`
-		UserID          int64     `json:"user_id"`
-		Amount          float64   `json:"amount"`
-		Location        string    `json:"location"`
-		Description     string    `json:"description"`
-		TransactionDate time.Time `json:"transaction_date"`
-	}{
-		ID:              1,
-		UserID:          1,
-		Amount:          req.Amount,
-		Location:        req.Location,
-		Description:     req.Description,
-		TransactionDate: time.Now(),
+	// Check budget settings
+	settings, err := h.db.GetBudgetSettings(userID)
+	if err != nil {
+		http.Error(w, "Failed to get budget settings", http.StatusInternalServerError)
+		return
+	}
+
+	// Get current balance
+	balance, err := h.db.GetUserBalance(userID)
+	if err != nil {
+		http.Error(w, "Failed to get balance", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if transaction would exceed balance and strict budget is enabled
+	if settings.StrictBudget && balance.CurrentBalance < req.Amount {
+		http.Error(w, "Transaction exceeds available balance with strict budget enabled", http.StatusForbidden)
+		return
+	}
+
+	// Create transaction
+	tx, err := h.db.CreateTransaction(userID, req.Amount, req.Location, req.Description)
+	if err != nil {
+		http.Error(w, "Failed to create transaction", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(transaction)
+	json.NewEncoder(w).Encode(tx)
 }
 
+// GetBudget returns the budget settings for the authenticated user
 func (h *Handler) GetBudget(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	userID := int64(1) 
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	budget := struct {
-		UserID                 int64   `json:"user_id"`
-		WeeklyBudget           float64 `json:"weekly_budget"`
-		CurrentWeekSpent       float64 `json:"current_week_spent"`
-		BudgetPercentage       float64 `json:"budget_percentage"`
-		BudgetWarnings         bool    `json:"budget_warnings"`
-		StrictBudget           bool    `json:"strict_budget"`
-		TransactionNotifications bool   `json:"transaction_notifications"`
-		WeeklyReports          bool    `json:"weekly_reports"`
-	}{
-		UserID:                  userID,
-		WeeklyBudget:            100.00,
-		CurrentWeekSpent:        45.00,
-		BudgetPercentage:        45.0,
-		BudgetWarnings:          true,
-		StrictBudget:            false,
-		TransactionNotifications: true,
-		WeeklyReports:           true,
+	settings, err := h.db.GetBudgetSettings(userID)
+	if err != nil {
+		http.Error(w, "Failed to get budget settings", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(budget)
+	json.NewEncoder(w).Encode(settings)
 }
 
+// UpdateBudget updates the budget settings for the authenticated user
 func (h *Handler) UpdateBudget(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req struct {
-		WeeklyBudget           float64 `json:"weekly_budget"`
-		BudgetWarnings         bool    `json:"budget_warnings"`
-		StrictBudget           bool    `json:"strict_budget"`
-		TransactionNotifications bool   `json:"transaction_notifications"`
-		WeeklyReports          bool    `json:"weekly_reports"`
+	userID, err := auth.ExtractUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
+	var req models.BudgetSettings
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
+	// Make sure the user ID in the request matches the authenticated user
+	req.UserID = userID
+
+	// Validate weekly budget
 	if req.WeeklyBudget <= 0 {
 		http.Error(w, "Weekly budget must be positive", http.StatusBadRequest)
 		return
 	}
-	
-	w.Header().Set("Content-Type", "application/json")
+
+	// Update settings
+	if err := h.db.UpdateBudgetSettings(&req); err != nil {
+		http.Error(w, "Failed to update budget settings", http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated settings
+	settings, err := h.db.GetBudgetSettings(userID)
+	if err != nil {
+		http.Error(w, "Failed to get updated budget settings", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	json.NewEncoder(w).Encode(settings)
 } 
