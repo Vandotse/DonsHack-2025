@@ -171,8 +171,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create menu item content
             menuItemElement.innerHTML = `
-                <h3>${item.name}</h3>
-                <div class="menu-item-price">${item.price}</div>
+                <div class="menu-item-content">
+                    <h3>${item.name}</h3>
+                    <div class="menu-item-price">${item.price}</div>
+                </div>
             `;
             
             menuItemElement.prepend(mealTypeBadge);
