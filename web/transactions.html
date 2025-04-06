@@ -284,11 +284,7 @@
           </table>
           
           <div class="pagination" id="pagination">
-            <button><i class="fas fa-chevron-left"></i></button>
-            <button class="active">1</button>
-            <button>2</button>
-            <button>3</button>
-            <button><i class="fas fa-chevron-right"></i></button>
+            <!-- Pagination buttons will be generated dynamically -->
           </div>
         </div>
       </section>
@@ -296,59 +292,175 @@
   </div>
 
   <script src="static/js/main.js"></script>
+  <script src="static/js/notifications.js"></script>
   <script src="static/js/transactions.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Wait for user data to load
+      if (!userData.currentBalance) {
+        await loadUserData();
+      }
+      
+      // Update summary statistics
       document.getElementById('summary-balance').textContent = userData.currentBalance.toFixed(2);
       document.getElementById('summary-spent').textContent = userData.spent.toFixed(2);
       
-      generateTransactionHistory();
+      // Load and display transactions
+      const allTransactions = await loadTransactions();
+      
+      // Update total transactions count
+      document.querySelector('.summary-item:first-child .value').textContent = allTransactions.length;
+      
+      // Calculate average transaction amount
+      let avgTransaction = 0;
+      if (allTransactions.length > 0) {
+        const sum = allTransactions.reduce((total, tx) => total + tx.amount, 0);
+        avgTransaction = sum / allTransactions.length;
+      }
+      document.querySelector('.summary-item:last-child .value').textContent = '$' + avgTransaction.toFixed(2);
+      
+      // Set up pagination and display transactions
+      setupPagination(allTransactions);
       
       document.getElementById('apply-filters').addEventListener('click', filterTransactions);
     });
+
+    // Pagination config
+    const ITEMS_PER_PAGE = 10;
+    let currentPage = 1;
+    let currentTransactions = [];
     
-    function generateTransactionHistory() {
-      const allTransactions = [...transactions];
+    function setupPagination(transactionsArray) {
+      currentTransactions = transactionsArray;
+      currentPage = 1;
+      updatePagination();
+      displayTransactionPage(currentPage);
+    }
+    
+    function updatePagination() {
+      const totalPages = Math.ceil(currentTransactions.length / ITEMS_PER_PAGE);
+      const paginationEl = document.getElementById('pagination');
+      paginationEl.innerHTML = '';
       
-      const locations = [
-        { name: "Campus Café", icon: "fa-utensils" },
-        { name: "University Bookstore", icon: "fa-book" },
-        { name: "Student Center", icon: "fa-mug-hot" },
-        { name: "Food Truck Rally", icon: "fa-truck" },
-        { name: "Late Night Grill", icon: "fa-hamburger" },
-        { name: "Campus Store", icon: "fa-shopping-bag" },
-        { name: "Library Café", icon: "fa-coffee" }
-      ];
-      
-      const today = new Date();
-      for (let i = 6; i < 30; i++) {
-        const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-        const randomAmount = (Math.random() * 20 + 2).toFixed(2);
-        const randomDay = new Date(today);
-        randomDay.setDate(today.getDate() - Math.floor(Math.random() * 30));
-        
-        allTransactions.push({
-          id: i,
-          name: randomLocation.name,
-          amount: parseFloat(randomAmount),
-          date: randomDay.toISOString(),
-          icon: randomLocation.icon
-        });
+      // Don't show pagination if there's only one page or no transactions
+      if (totalPages <= 1) {
+        paginationEl.style.display = 'none';
+        return;
+      } else {
+        paginationEl.style.display = 'flex';
       }
       
-      allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Previous button
+      const prevBtn = document.createElement('button');
+      prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          displayTransactionPage(currentPage - 1);
+        }
+      });
+      paginationEl.appendChild(prevBtn);
       
-      displayTransactionTable(allTransactions);
+      // Page numbers
+      const maxPageButtons = 5; // Max number of page buttons to show
+      let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+      let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+      
+      // Adjust startPage if we're near the end
+      if (endPage - startPage + 1 < maxPageButtons) {
+        startPage = Math.max(1, endPage - maxPageButtons + 1);
+      }
+      
+      // First page button if needed
+      if (startPage > 1) {
+        const firstPageBtn = document.createElement('button');
+        firstPageBtn.textContent = '1';
+        firstPageBtn.addEventListener('click', () => displayTransactionPage(1));
+        paginationEl.appendChild(firstPageBtn);
+        
+        // Ellipsis if needed
+        if (startPage > 2) {
+          const ellipsis = document.createElement('button');
+          ellipsis.textContent = '...';
+          ellipsis.disabled = true;
+          ellipsis.style.cursor = 'default';
+          paginationEl.appendChild(ellipsis);
+        }
+      }
+      
+      // Page buttons
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        if (i === currentPage) {
+          pageBtn.classList.add('active');
+        }
+        pageBtn.addEventListener('click', () => displayTransactionPage(i));
+        paginationEl.appendChild(pageBtn);
+      }
+      
+      // Last page button if needed
+      if (endPage < totalPages) {
+        // Ellipsis if needed
+        if (endPage < totalPages - 1) {
+          const ellipsis = document.createElement('button');
+          ellipsis.textContent = '...';
+          ellipsis.disabled = true;
+          ellipsis.style.cursor = 'default';
+          paginationEl.appendChild(ellipsis);
+        }
+        
+        const lastPageBtn = document.createElement('button');
+        lastPageBtn.textContent = totalPages;
+        lastPageBtn.addEventListener('click', () => displayTransactionPage(totalPages));
+        paginationEl.appendChild(lastPageBtn);
+      }
+      
+      // Next button
+      const nextBtn = document.createElement('button');
+      nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          displayTransactionPage(currentPage + 1);
+        }
+      });
+      paginationEl.appendChild(nextBtn);
+    }
+    
+    function displayTransactionPage(pageNum) {
+      currentPage = pageNum;
+      
+      // Calculate slice indices
+      const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
+      const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, currentTransactions.length);
+      
+      // Get transactions for this page
+      const transactionsForPage = currentTransactions.slice(startIndex, endIndex);
+      
+      // Display transactions
+      displayTransactionTable(transactionsForPage);
+      
+      // Update pagination UI
+      updatePagination();
+      
+      // Scroll to top of transactions table
+      document.querySelector('.transactions-table').scrollIntoView({ behavior: 'smooth' });
     }
     
     function displayTransactionTable(transactionsToDisplay) {
       const tableBody = document.getElementById('transactions-table-body');
       tableBody.innerHTML = '';
       
+      if (!transactionsToDisplay || transactionsToDisplay.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">No transactions found</td></tr>';
+        return;
+      }
+      
       transactionsToDisplay.forEach(transaction => {
         const row = document.createElement('tr');
         
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = new Date(transaction.transaction_date);
         const formattedDate = transactionDate.toLocaleDateString(undefined, { 
           year: 'numeric',
           month: 'short', 
@@ -367,9 +479,9 @@
           <td>
             <div class="transaction-location">
               <div class="location-icon">
-                <i class="fas ${transaction.icon}"></i>
+                <i class="fas ${transaction.icon || getIconForTransaction(transaction.location)}"></i>
               </div>
-              <div>${transaction.name}</div>
+              <div>${transaction.location}</div>
             </div>
           </td>
           <td class="transaction-amount">-$${transaction.amount.toFixed(2)}</td>
@@ -381,7 +493,89 @@
     }
     
     function filterTransactions() {
-      alert('Filters applied. In a full implementation, this would filter the transactions based on your selections.');
+      // Get filter values
+      const dateRange = document.getElementById('date-range').value;
+      const location = document.getElementById('location').value;
+      const amountRange = document.getElementById('amount').value;
+      
+      // Apply filters to transactions
+      let filteredTransactions = [...transactions];
+      
+      // Filter by date range
+      if (dateRange !== 'all') {
+        const today = new Date();
+        const startDate = new Date(today);
+        
+        if (dateRange === 'this-week') {
+          // Set to beginning of current week (Sunday)
+          startDate.setDate(today.getDate() - today.getDay());
+          startDate.setHours(0, 0, 0, 0);
+        } else if (dateRange === 'last-week') {
+          // Set to beginning of last week
+          startDate.setDate(today.getDate() - today.getDay() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 7);
+          
+          filteredTransactions = filteredTransactions.filter(tx => {
+            const txDate = new Date(tx.transaction_date);
+            return txDate >= startDate && txDate < endDate;
+          });
+        } else if (dateRange === 'this-month') {
+          // Set to beginning of current month
+          startDate.setDate(1);
+          startDate.setHours(0, 0, 0, 0);
+        }
+        
+        if (dateRange !== 'last-week') {
+          filteredTransactions = filteredTransactions.filter(tx => {
+            return new Date(tx.transaction_date) >= startDate;
+          });
+        }
+      }
+      
+      // Filter by location
+      if (location !== 'all') {
+        // Create a map of location keywords to filter by
+        const locationMap = {
+          'campus-cafe': ['cafe', 'restaurant', 'dining'],
+          'bookstore': ['book', 'library'],
+          'student-center': ['center', 'commons'],
+          'food-truck': ['truck', 'food truck']
+        };
+        
+        if (locationMap[location]) {
+          const keywords = locationMap[location];
+          filteredTransactions = filteredTransactions.filter(tx => {
+            const txLocation = tx.location.toLowerCase();
+            return keywords.some(keyword => txLocation.includes(keyword));
+          });
+        }
+      }
+      
+      // Filter by amount
+      if (amountRange !== 'all') {
+        const amountRanges = {
+          'under-5': [0, 5],
+          '5-10': [5, 10],
+          '10-20': [10, 20],
+          'over-20': [20, Infinity]
+        };
+        
+        const range = amountRanges[amountRange];
+        if (range) {
+          filteredTransactions = filteredTransactions.filter(tx => {
+            return tx.amount >= range[0] && tx.amount < range[1];
+          });
+        }
+      }
+      
+      // Update pagination with filtered transactions
+      setupPagination(filteredTransactions);
+      
+      // Show message with filter count
+      showMessage(`Showing ${filteredTransactions.length} filtered transactions`);
     }
   </script>
 </body>

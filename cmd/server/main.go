@@ -30,19 +30,27 @@ func main() {
 	router.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	apiHandler := api.NewHandler(db)
-	
 	authHandler := auth.NewHandler(db)
+	
 	router.HandleFunc("/api/login", authHandler.Login)
+	router.HandleFunc("/api/register", authHandler.Register)
 	router.HandleFunc("/api/logout", authHandler.Logout)
 	
-	router.HandleFunc("/api/users/me", apiHandler.GetCurrentUser)
-	router.HandleFunc("/api/users/me/balance", apiHandler.GetUserBalance)
+	withAuth := func(handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			authMiddleware := auth.AuthMiddleware(db)
+			authMiddleware(http.HandlerFunc(handler)).ServeHTTP(w, r)
+		}
+	}
 	
-	router.HandleFunc("/api/transactions", apiHandler.GetTransactions)
-	router.HandleFunc("/api/transactions/new", apiHandler.CreateTransaction)
+	router.HandleFunc("/api/users/me", withAuth(apiHandler.GetCurrentUser))
+	router.HandleFunc("/api/users/me/balance", withAuth(apiHandler.GetUserBalance))
 	
-	router.HandleFunc("/api/budget", apiHandler.GetBudget)
-	router.HandleFunc("/api/budget/update", apiHandler.UpdateBudget)
+	router.HandleFunc("/api/transactions", withAuth(apiHandler.GetTransactions))
+	router.HandleFunc("/api/transactions/new", withAuth(apiHandler.CreateTransaction))
+	
+	router.HandleFunc("/api/budget", withAuth(apiHandler.GetBudget))
+	router.HandleFunc("/api/budget/update", withAuth(apiHandler.UpdateBudget))
 	
 	fmt.Printf("Server running at http://localhost:%s/\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

@@ -140,6 +140,27 @@
       max-width: 40px;
       margin-right: 1rem;
     }
+
+    .btn-enable-notifications {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.7rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    }
+    
+    .btn-enable-notifications:hover:not(:disabled) {
+      background-color: var(--secondary-color);
+      color: #000;
+    }
+    
+    .btn-enable-notifications:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -228,12 +249,21 @@
           </label>
         </div>
         
+        <div class="setting-row notification-permission-row" style="display: none;">
+          <div class="setting-info">
+            <h3>Browser Notifications</h3>
+            <p>Allow browser notifications for alerts and updates</p>
+          </div>
+          <button id="enable-notifications" class="btn-enable-notifications">Enable Notifications</button>
+        </div>
+        
         <button id="save-settings" class="save-button">Save Settings</button>
       </section>
     </main>
   </div>
 
   <script src="static/js/main.js"></script>
+  <script src="static/js/notifications.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const settings = JSON.parse(localStorage.getItem('userSettings')) || {
@@ -250,6 +280,23 @@
       document.getElementById('transaction-notifications').checked = settings.transactionNotifications;
       document.getElementById('weekly-reports').checked = settings.weeklyReports;
       
+      // Check if browser supports notifications
+      if ("Notification" in window) {
+        const notificationRow = document.querySelector('.notification-permission-row');
+        notificationRow.style.display = 'flex';
+        
+        // Update button text based on current permission
+        const notificationBtn = document.getElementById('enable-notifications');
+        
+        if (Notification.permission === "granted") {
+          notificationBtn.textContent = "Notifications Enabled";
+          notificationBtn.disabled = true;
+        } else if (Notification.permission === "denied") {
+          notificationBtn.textContent = "Notifications Blocked";
+          notificationBtn.disabled = true;
+        }
+      }
+      
       document.getElementById('save-settings').addEventListener('click', () => {
         const newSettings = {
           weeklyBudget: parseFloat(document.getElementById('weekly-budget-input').value),
@@ -263,6 +310,11 @@
         
         userData.weeklyBudget = newSettings.weeklyBudget;
         userData.budgetPercentage = Math.round((userData.currentWeekSpent / userData.weeklyBudget) * 100);
+        
+        // Update the notification system with new settings
+        if (typeof notificationSystem !== 'undefined') {
+          notificationSystem.loadSettings();
+        }
         
         alert('Settings saved successfully');
       });
