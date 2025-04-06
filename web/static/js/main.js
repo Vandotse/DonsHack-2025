@@ -1,58 +1,45 @@
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem('authToken');
-  
-  console.log('Auth token from localStorage:', token ? 'Present (length: ' + token.length + ')' : 'Not found');
-  
-  if (!token && !endpoint.includes('/login') && !endpoint.includes('/register')) {
-    console.error('No auth token available for protected endpoint:', endpoint);
-    window.location.href = 'login.html';
-    throw new Error('Authentication required');
-  }
+  console.log(`API call to ${endpoint}`, { token: !!token });
   
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(options.headers || {})
   };
   
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    console.log('Authorization header set with token');
-  }
-  
   try {
-    console.log(`Fetching ${endpoint}...`);
     const response = await fetch(endpoint, {
       ...options,
       headers
     });
     
-    console.log(`${endpoint} response status:`, response.status);
+    console.log(`API response from ${endpoint}:`, { status: response.status });
     
     if (response.status === 401) {
-      console.error('Authentication failed (401) for endpoint:', endpoint);
-      
-      if (!window.location.href.includes('login.html')) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('studentId');
-        
-        window.location.href = 'login.html?error=session_expired';
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('studentId');
+
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      if (currentPage !== 'login.html' && currentPage !== 'register.html') {
+        window.location.href = `login.html?error=${encodeURIComponent('Your session has expired')}`;
       }
-      
-      throw new Error('Authentication failed');
+      throw new Error('Unauthorized');
     }
     
     const data = await response.json();
     
     if (!response.ok) {
-      console.error(`API error (${endpoint}):`, data.error);
-      throw new Error(data.error || 'API request failed');
+      const errorMsg = data.error || `Request failed with status ${response.status}`;
+      console.error(`API error from ${endpoint}:`, errorMsg);
+      throw new Error(errorMsg);
     }
     
     return data;
   } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
+    console.error(`Error in API call to ${endpoint}:`, error);
     throw error;
   }
 }

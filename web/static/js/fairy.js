@@ -1,4 +1,3 @@
-
 const fairyState = {
   myRequests: [],
   pendingRequests: [],
@@ -46,9 +45,11 @@ async function toggleFairyStatus(isActive, maxAmount) {
 
 async function loadMyRequests() {
   const data = await fetchFairyAPI('/api/fairy/requests');
-  if (data && data.requests) {
+  if (data && Array.isArray(data.requests)) {
     fairyState.myRequests = data.requests;
     updateMyRequestsUI();
+  } else if (data) {
+    console.error('Invalid response format from /api/fairy/requests', data);
   }
   return data;
 }
@@ -64,9 +65,11 @@ async function loadPendingRequests() {
 
 async function loadAcceptedRequests() {
   const data = await fetchFairyAPI('/api/fairy/requests/accepted');
-  if (data && data.requests) {
+  if (data && Array.isArray(data.requests)) {
     fairyState.acceptedRequests = data.requests;
     updateAcceptedRequestsUI();
+  } else if (data) {
+    console.error('Invalid response format from /api/fairy/requests/accepted', data);
   }
   return data;
 }
@@ -152,12 +155,22 @@ async function rateRequest(requestId, rating, comment) {
 }
 
 async function loadLeaderboard(timeframe = 'all') {
-  const data = await fetchFairyAPI(`/api/fairy/leaderboard?timeframe=${timeframe}`);
-  if (data && data.fairies) {
-    fairyState.leaderboard = data.fairies;
+  try {
+    const data = await fetchFairyAPI(`/api/fairy/leaderboard?timeframe=${timeframe}`);
+    if (data && Array.isArray(data.fairies)) {
+      fairyState.leaderboard = data.fairies;
+    } else {
+      fairyState.leaderboard = [];
+      console.log('No fairies found on leaderboard, using empty array');
+    }
     updateLeaderboardUI();
+    return data;
+  } catch (error) {
+    console.error('Error loading leaderboard:', error);
+    fairyState.leaderboard = [];
+    updateLeaderboardUI();
+    return null;
   }
-  return data;
 }
 
 
@@ -273,7 +286,7 @@ function updateMyRequestsUI() {
   if (!requestsContainer) return;
   
   if (!fairyState.myRequests || fairyState.myRequests.length === 0) {
-    requestsContainer.innerHTML = '<div class="empty-state">You have no requests yet</div>';
+    requestsContainer.innerHTML = '<div class="empty-state">You have no requests yet. Use the form above to create a request.</div>';
     return;
   }
   
@@ -286,7 +299,7 @@ function updatePendingRequestsUI() {
   if (!requestsContainer) return;
   
   if (!fairyState.pendingRequests || fairyState.pendingRequests.length === 0) {
-    requestsContainer.innerHTML = '<div class="empty-state">No pending requests available</div>';
+    requestsContainer.innerHTML = '<div class="empty-state">No pending requests available at this time. Check back later!</div>';
     return;
   }
   
@@ -301,7 +314,7 @@ function updatePendingRequestsUI() {
         <div class="request-details">
           <div class="detail-item">
             <div class="label">Requestor</div>
-            <div class="value">${request.requestor_name}</div>
+            <div class="value">${request.requestor_name || 'Unknown User'}</div>
           </div>
           <div class="detail-item">
             <div class="label">Location</div>
@@ -336,7 +349,7 @@ function updateAcceptedRequestsUI() {
   if (!requestsContainer) return;
   
   if (!fairyState.acceptedRequests || fairyState.acceptedRequests.length === 0) {
-    requestsContainer.innerHTML = '<div class="empty-state">You have no accepted requests</div>';
+    requestsContainer.innerHTML = '<div class="empty-state">You have no accepted requests. Browse pending requests to help others!</div>';
     return;
   }
   
@@ -353,7 +366,7 @@ function updateAcceptedRequestsUI() {
         <div class="request-details">
           <div class="detail-item">
             <div class="label">Requestor</div>
-            <div class="value">${request.requestor_name}</div>
+            <div class="value">${request.requestor_name || 'Unknown User'}</div>
           </div>
           <div class="detail-item">
             <div class="label">Location</div>
@@ -390,7 +403,7 @@ function updateLeaderboardUI() {
   if (!leaderboardContainer) return;
   
   if (!fairyState.leaderboard || fairyState.leaderboard.length === 0) {
-    leaderboardContainer.innerHTML = '<div class="empty-state">No fairies on the leaderboard yet</div>';
+    leaderboardContainer.innerHTML = '<div class="empty-state">No fairies on the leaderboard yet. Be the first by helping others!</div>';
     return;
   }
   
@@ -412,9 +425,9 @@ function updateLeaderboardUI() {
     html += `
       <tr>
         <td>#${index + 1}</td>
-        <td>${fairy.name}</td>
-        <td>$${parseFloat(fairy.amount_helped).toFixed(2)}</td>
-        <td>${fairy.requests_fulfilled}</td>
+        <td>${fairy.name || 'Unknown Fairy'}</td>
+        <td>$${parseFloat(fairy.amount_helped || 0).toFixed(2)}</td>
+        <td>${fairy.requests_fulfilled || 0}</td>
         <td>${fairy.rating ? parseFloat(fairy.rating).toFixed(1) : 'N/A'}</td>
       </tr>
     `;
@@ -525,17 +538,23 @@ async function createDemoData() {
       'Any fairy available to help with dinner?'
     ];
     
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const location = locations[i % locations.length];
       const amount = amounts[i % amounts.length];
       const description = descriptions[i % descriptions.length];
       
       await createRequest(location, amount, description);
       console.log(`Created demo request ${i+1}`);
+      
+      if (i % 2 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
     
     localStorage.setItem('demoDataCreated', 'true');
     console.log('Demo data created successfully');
+    
+    await loadMyRequests();
   } catch (error) {
     console.error('Error creating demo data:', error);
   }

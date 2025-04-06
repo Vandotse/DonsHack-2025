@@ -427,56 +427,36 @@ async function getPendingFairyRequests(fairyId, maxAmount) {
   return all(sql, params);
 }
 
-async function getUserFairyRequests(userID, limit = 20, offset = 0) {
-  const countRow = await get(
-    `SELECT COUNT(*) as count FROM fairy_requests WHERE requestor_id = ?`,
-    [userID]
-  );
-  
+async function getUserFairyRequests(userId) {
   const requests = await all(
-    `SELECT fr.id, fr.requestor_id, fr.fairy_id, fr.location, fr.amount, fr.description, 
-       fr.status, fr.requestor_confirmed, fr.fairy_confirmed, fr.created_at, fr.updated_at,
-       fairy.name as fairy_name, fairy.student_id as fairy_student_id
+    `SELECT 
+       fr.*,
+       u.name as fairy_name,
+       u.email as fairy_email,
+       u.student_id as fairy_student_id
      FROM fairy_requests fr
-     LEFT JOIN users fairy ON fr.fairy_id = fairy.id
+     LEFT JOIN users u ON fr.fairy_id = u.id
      WHERE fr.requestor_id = ?
-     ORDER BY fr.created_at DESC
-     LIMIT ? OFFSET ?`,
-    [userID, limit, offset]
+     ORDER BY fr.created_at DESC`,
+    [userId]
   );
   
-  return {
-    requests,
-    total: countRow ? countRow.count : 0,
-    limit,
-    offset
-  };
+  return requests;
 }
 
-async function getFairyAcceptedRequests(fairyID, limit = 20, offset = 0) {
-  const countRow = await get(
-    `SELECT COUNT(*) as count FROM fairy_requests WHERE fairy_id = ?`,
-    [fairyID]
-  );
-  
-  const requests = await all(
-    `SELECT fr.id, fr.requestor_id, fr.fairy_id, fr.location, fr.amount, fr.description, 
-       fr.status, fr.requestor_confirmed, fr.fairy_confirmed, fr.created_at, fr.updated_at,
-       u.name as requestor_name, u.student_id as requestor_student_id
+async function getFairyAcceptedRequests(fairyId) {
+  return all(
+    `SELECT 
+       fr.*,
+       u.name as requestor_name,
+       u.email as requestor_email,
+       u.student_id as requestor_student_id
      FROM fairy_requests fr
      JOIN users u ON fr.requestor_id = u.id
-     WHERE fr.fairy_id = ?
-     ORDER BY fr.created_at DESC
-     LIMIT ? OFFSET ?`,
-    [fairyID, limit, offset]
+     WHERE fr.fairy_id = ? AND fr.status = 'accepted'
+     ORDER BY fr.created_at DESC`,
+    [fairyId]
   );
-  
-  return {
-    requests,
-    total: countRow ? countRow.count : 0,
-    limit,
-    offset
-  };
 }
 
 async function acceptFairyRequest(requestID, fairyID) {
@@ -504,76 +484,72 @@ async function acceptFairyRequest(requestID, fairyID) {
   });
 }
 
-async function confirmFairyRequest(requestID, userID, isRequestor) {
-  return new Promise((resolve, reject) => {
-    db.serialize(async () => {
-      try {
-        await run('BEGIN TRANSACTION');
-        
-        const request = await getFairyRequest(requestID);
-        
-        if (!request) {
-          throw new Error('Request not found');
-        }
-        
-        if (request.status !== 'accepted') {
-          throw new Error('Request must be accepted before it can be confirmed');
-        }
-        
-        if (isRequestor) {
-          if (request.requestor_id !== userID) {
-            throw new Error('Only the requestor can confirm this request');
-          }
-          
-          await run(
-            `UPDATE fairy_requests
-             SET requestor_confirmed = 1, updated_at = datetime('now')
-             WHERE id = ?`,
-            [requestID]
-          );
-        } else {
-          if (request.fairy_id !== userID) {
-            throw new Error('Only the fairy can confirm this request');
-          }
-          
-          await run(
-            `UPDATE fairy_requests
-             SET fairy_confirmed = 1, updated_at = datetime('now')
-             WHERE id = ?`,
-            [requestID]
-          );
-        }
-        
-        const updatedRequest = await getFairyRequest(requestID);
-        
-        if (updatedRequest.requestor_confirmed && updatedRequest.fairy_confirmed) {
-          await run(
-            `UPDATE fairy_requests
-             SET status = 'completed', updated_at = datetime('now')
-             WHERE id = ?`,
-            [requestID]
-          );
-          
-          await run(
-            `UPDATE fairy_statuses
-             SET total_helped_amount = total_helped_amount + ?,
-                 total_requests_fulfilled = total_requests_fulfilled + 1,
-                 updated_at = datetime('now')
-             WHERE user_id = ?`,
-            [updatedRequest.amount, updatedRequest.fairy_id]
-          );
-        }
-        
-        await run('COMMIT');
-        
-        const finalRequest = await getFairyRequest(requestID);
-        resolve(finalRequest);
-      } catch (err) {
-        await run('ROLLBACK');
-        reject(err);
+async function confirmFairyRequest(requestID, userId, isRequestor) {
+  try {
+    await db.run('BEGIN TRANSACTION');
+    
+    const request = await getFairyRequestById(requestID);
+    if (!request) {
+      throw new Error('Request not found');
+    }
+    
+    if (request.status !== 'accepted') {
+      throw new Error('Request must be accepted before it can be confirmed');
+    }
+    
+    if (isRequestor) {
+      if (request.requestor_id !== userId) {
+        throw new Error('Only the requestor can confirm this request');
       }
-    });
-  });
+      
+      await run(
+        `UPDATE fairy_requests 
+         SET requestor_confirmed = 1, 
+             updated_at = datetime('now') 
+         WHERE id = ?`,
+        [requestID]
+      );
+    } else {
+      if (request.fairy_id !== userId) {
+        throw new Error('Only the fairy can confirm this request');
+      }
+      
+      await run(
+        `UPDATE fairy_requests 
+         SET fairy_confirmed = 1, 
+             updated_at = datetime('now') 
+         WHERE id = ?`,
+        [requestID]
+      );
+    }
+    
+    const updatedRequest = await getFairyRequestById(requestID);
+    
+    if (updatedRequest.requestor_confirmed && updatedRequest.fairy_confirmed) {
+      await run(
+        `UPDATE fairy_requests 
+         SET status = 'completed', 
+             updated_at = datetime('now') 
+         WHERE id = ?`,
+        [requestID]
+      );
+      
+      await run(
+        `UPDATE fairy_statuses
+         SET total_helped_amount = total_helped_amount + ?,
+             total_requests_fulfilled = total_requests_fulfilled + 1,
+             updated_at = datetime('now')
+         WHERE user_id = ?`,
+        [updatedRequest.amount, updatedRequest.fairy_id]
+      );
+    }
+    
+    await db.run('COMMIT');
+    return true;
+  } catch (error) {
+    await db.run('ROLLBACK');
+    throw error;
+  }
 }
 
 async function addFairyRating(requestID, requestorID, fairyID, rating, comment) {
@@ -796,52 +772,6 @@ async function cancelFairyRequest(requestId) {
   );
 }
 
-db.confirmFairyRequest = async (requestId, fairyId, requestorId, amount) => {
-  await db.run('BEGIN TRANSACTION');
-  
-  try {
-    await db.run(
-      `UPDATE fairy_requests 
-       SET fairy_confirmed = 1, 
-           updated_at = CURRENT_TIMESTAMP 
-       WHERE id = ?`,
-      [requestId]
-    );
-    
-    const request = await db.get(
-      `SELECT fairy_confirmed, requestor_confirmed FROM fairy_requests WHERE id = ?`,
-      [requestId]
-    );
-    
-    if (request.fairy_confirmed && request.requestor_confirmed) {
-      await db.run(
-        `UPDATE fairy_requests 
-         SET status = 'completed', 
-             updated_at = CURRENT_TIMESTAMP 
-         WHERE id = ?`,
-        [requestId]
-      );
-      
-      await db.run(
-        `UPDATE balances SET balance = balance - ? WHERE user_id = ?`,
-        [amount, fairyId]
-      );
-      
-      await db.run(
-        `INSERT INTO transactions (user_id, amount, location, description, type) 
-         VALUES (?, ?, ?, ?, 'fairy_donation')`,
-        [fairyId, -amount, 'Flexi Fairy', `Helped student #${requestorId} with meal`]
-      );
-    }
-    
-    await db.run('COMMIT');
-    return true;
-  } catch (error) {
-    await db.run('ROLLBACK');
-    throw error;
-  }
-};
-
 async function rateFairyRequest(requestId, rating, comment) {
   return run(
     `UPDATE fairy_requests 
@@ -855,13 +785,58 @@ async function rateFairyRequest(requestId, rating, comment) {
 }
 
 async function completeFairyRequest(requestId) {
-  return run(
-    `UPDATE fairy_requests 
-     SET status = 'completed', 
-         updated_at = CURRENT_TIMESTAMP 
-     WHERE id = ?`,
-    [requestId]
-  );
+  const request = await getFairyRequestById(requestId);
+  if (!request) {
+    throw new Error('Request not found');
+  }
+  
+  try {
+    await run('BEGIN TRANSACTION');
+    
+    await run(
+      `UPDATE fairy_requests 
+       SET status = 'completed', 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [requestId]
+    );
+    
+    await run(
+      `UPDATE fairy_statuses
+       SET total_helped_amount = total_helped_amount + ?,
+           total_requests_fulfilled = total_requests_fulfilled + 1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ?`,
+      [request.amount, request.fairy_id]
+    );
+    
+    if (request.rating) {
+      // Update the fairy's rating in fairy_statuses
+      const fairyStatus = await get(
+        `SELECT rating_average, rating_count FROM fairy_statuses WHERE user_id = ?`,
+        [request.fairy_id]
+      );
+      
+      const newCount = (fairyStatus.rating_count || 0) + 1;
+      const newRating = ((fairyStatus.rating_average || 0) * (fairyStatus.rating_count || 0) + request.rating) / newCount;
+      
+      await run(
+        `UPDATE fairy_statuses
+         SET rating_average = ?,
+             rating_count = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ?`,
+        [newRating, newCount, request.fairy_id]
+      );
+    }
+    
+    await run('COMMIT');
+    return true;
+  } catch (error) {
+    await run('ROLLBACK');
+    console.error('Error completing fairy request:', error);
+    throw error;
+  }
 }
 
 async function getFairyLeaderboard(timeframe) {
@@ -882,17 +857,23 @@ async function getFairyLeaderboard(timeframe) {
       u.student_id,
       COUNT(fr.id) as requests_fulfilled,
       COALESCE(SUM(fr.amount), 0) as amount_helped,
-      COALESCE(AVG(fr.rating), 0) as rating
+      COALESCE(fs.rating_average, 0) as rating
     FROM users u
-    JOIN fairy_requests fr ON u.id = fr.fairy_id
-    WHERE fr.status = 'completed'
-    ${timeFilter}
+    JOIN fairy_statuses fs ON u.id = fs.user_id
+    LEFT JOIN fairy_requests fr ON u.id = fr.fairy_id AND fr.status = 'completed' ${timeFilter}
+    WHERE fs.is_active = 1
     GROUP BY u.id
-    ORDER BY amount_helped DESC
-    LIMIT 25
+    ORDER BY amount_helped DESC, rating DESC
+    LIMIT 50
   `;
   
-  return all(sql);
+  try {
+    const result = await all(sql);
+    return result || [];
+  } catch (error) {
+    console.error('Error getting fairy leaderboard:', error);
+    return [];
+  }
 }
 
 async function initFairyTables() {
@@ -983,7 +964,6 @@ module.exports = {
   getUserTransactions,
   getBudgetSettings,
   updateBudgetSettings,
-  toggleFairyStatus,
   getFairyStatus,
   getActiveFairies,
   createFairyRequest,
@@ -1000,5 +980,6 @@ module.exports = {
   rateFairyRequest,
   completeFairyRequest,
   getFairyLeaderboard,
-  updateFairyStatus
+  updateFairyStatus,
+  initFairyTables
 }; 

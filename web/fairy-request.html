@@ -306,6 +306,12 @@
 
       <section class="requests-history card">
         <h2>Your Fairy Requests</h2>
+        <div class="filter-options" style="margin-bottom: 1rem;">
+          <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="show-completed" style="margin-right: 0.5rem;">
+            <span>Show completed requests</span>
+          </label>
+        </div>
         <div id="requests-container">
           <!-- Request cards will be dynamically inserted here -->
           <div class="empty-state">Loading your requests...</div>
@@ -345,6 +351,11 @@
     document.addEventListener('DOMContentLoaded', async () => {
       // Load user requests
       loadUserRequests();
+      
+      // Add event listener for the show-completed checkbox
+      document.getElementById('show-completed').addEventListener('change', () => {
+        loadUserRequests();
+      });
       
       // Handle form submission
       document.getElementById('fairy-request-form').addEventListener('submit', async (e) => {
@@ -445,7 +456,7 @@
         try {
           const comment = document.getElementById('comment').value;
           
-          await fetchAPI('/api/fairy/rate', {
+          await fetchAPI('/api/fairy/request/rate', {
             method: 'POST',
             body: JSON.stringify({
               request_id: currentRequestId,
@@ -476,10 +487,11 @@
       // Function to load user's requests
       async function loadUserRequests() {
         try {
-          const response = await fetchAPI('/api/fairy/requests/user');
+          const response = await fetchAPI('/api/fairy/requests');
           const requestsContainer = document.getElementById('requests-container');
+          const showCompleted = document.getElementById('show-completed').checked;
           
-          if (response.requests.length === 0) {
+          if (!response.requests || response.requests.length === 0) {
             requestsContainer.innerHTML = '<div class="empty-state">You haven\'t made any requests yet.</div>';
             return;
           }
@@ -489,8 +501,18 @@
             return new Date(b.created_at) - new Date(a.created_at);
           });
           
+          // Filter out completed requests that have ratings, unless showCompleted is true
+          const filteredRequests = showCompleted ? 
+            sortedRequests : 
+            sortedRequests.filter(request => !(request.status === 'completed' && request.rating));
+          
+          if (filteredRequests.length === 0) {
+            requestsContainer.innerHTML = '<div class="empty-state">No active requests found. Use the form above to create a request.</div>';
+            return;
+          }
+          
           // Generate HTML for each request
-          const requestsHTML = sortedRequests.map(request => {
+          const requestsHTML = filteredRequests.map(request => {
             const statusClass = request.status.toLowerCase();
             const formattedDate = new Date(request.created_at).toLocaleDateString(undefined, {
               weekday: 'short',
@@ -511,7 +533,7 @@
                   <button class="confirm-button" data-request-id="${request.id}">Confirm Completion</button>
                 </div>
               `;
-            } else if (request.status === 'completed' && !request.has_rating) {
+            } else if ((request.status === 'completed' || request.status === 'accepted') && request.requestor_confirmed && !request.rating) {
               actionsHTML = `
                 <div class="request-buttons">
                   <button class="rate-button" data-request-id="${request.id}" data-fairy-name="${request.fairy_name || 'the Flexi Fairy'}">Rate Fairy</button>
@@ -580,7 +602,7 @@
       // Function to confirm request completion
       async function confirmRequest(requestId) {
         try {
-          await fetchAPI('/api/fairy/request/confirm', {
+          await fetchAPI('/api/fairy/request/requestor-confirm', {
             method: 'POST',
             body: JSON.stringify({
               request_id: requestId

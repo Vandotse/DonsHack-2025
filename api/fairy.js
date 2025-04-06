@@ -54,7 +54,19 @@ router.post('/request', authMiddleware, async (req, res) => {
 router.get('/requests', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log(`Getting fairy requests for user ${userId}`);
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
     const requests = await db.getUserFairyRequests(userId);
+    
+    if (!requests) {
+      return res.status(500).json({ error: 'Failed to retrieve requests' });
+    }
+    
+    console.log(`Found ${requests.length} fairy requests for user ${userId}`);
     res.json({ requests });
   } catch (error) {
     console.error('Failed to get user fairy requests:', error);
@@ -82,7 +94,9 @@ router.get('/requests/pending', authMiddleware, async (req, res) => {
 router.get('/requests/accepted', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log(`Getting accepted requests for fairy ${userId}`);
     const requests = await db.getFairyAcceptedRequests(userId);
+    console.log(`Found ${requests.length} accepted requests`);
     res.json({ requests });
   } catch (error) {
     console.error('Failed to get accepted fairy requests:', error);
@@ -174,12 +188,43 @@ router.post('/request/confirm', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'You have already confirmed this request' });
     }
     
-    await db.confirmFairyRequest(request_id, fairyId, request.requestor_id, request.amount);
+    await db.confirmFairyRequest(request_id, fairyId, false);
     
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to confirm fairy request:', error);
     res.status(500).json({ error: 'Failed to confirm fairy request', details: error.message });
+  }
+});
+
+router.post('/request/requestor-confirm', authMiddleware, async (req, res) => {
+  try {
+    const { request_id } = req.body;
+    const userId = req.user.id;
+    
+    const request = await db.getFairyRequestById(request_id);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    if (request.requestor_id !== userId) {
+      return res.status(403).json({ error: 'You can only confirm requests you created' });
+    }
+    
+    if (request.status !== 'accepted') {
+      return res.status(400).json({ error: 'Only accepted requests can be confirmed' });
+    }
+    
+    if (request.requestor_confirmed) {
+      return res.status(400).json({ error: 'You have already confirmed this request' });
+    }
+    
+    await db.confirmFairyRequest(request_id, userId, true);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to confirm request:', error);
+    res.status(500).json({ error: 'Failed to confirm request', details: error.message });
   }
 });
 
@@ -201,8 +246,8 @@ router.post('/request/rate', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: 'You can only rate requests you created' });
     }
     
-    if (request.status !== 'accepted') {
-      return res.status(400).json({ error: 'Only accepted requests can be rated' });
+    if (request.status !== 'accepted' && request.status !== 'completed') {
+      return res.status(400).json({ error: 'Only accepted or completed requests can be rated' });
     }
     
     if (request.requestor_confirmed) {
@@ -226,7 +271,9 @@ router.post('/request/rate', authMiddleware, async (req, res) => {
 router.get('/leaderboard', authMiddleware, async (req, res) => {
   try {
     const timeframe = req.query.timeframe || 'all';
+    console.log(`Getting fairy leaderboard for timeframe: ${timeframe}`);
     const fairies = await db.getFairyLeaderboard(timeframe);
+    console.log(`Found ${fairies.length} fairies on leaderboard`);
     res.json({ fairies });
   } catch (error) {
     console.error('Failed to get fairy leaderboard:', error);
